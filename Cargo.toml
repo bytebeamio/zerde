@@ -9,3 +9,6 @@ thiserror = "1"
 # Compression
 async-compression = { version = "0.3", features = ["tokio", "zstd", "zlib"] }
 lz4_flex = "0.9.3"
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"

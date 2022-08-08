@@ -1,105 +1,49 @@
-use std::io::{Read, Write};
+use serde::{Deserialize, Serialize};
 
-use async_compression::tokio::write::{ZlibDecoder, ZlibEncoder, ZstdDecoder, ZstdEncoder};
-use lz4_flex::frame::{FrameDecoder, FrameEncoder};
-use tokio::io::AsyncWriteExt;
+mod compress;
+mod serialization;
 
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("Io error {0}")]
-    Io(#[from] std::io::Error),
-    #[error("LZ4 compression error: {0}")]
-    Lz4(#[from] lz4_flex::frame::Error),
-}
+use compress::Algo::*;
+use serialization::Algo::*;
 
-#[derive(Debug, Clone)]
-pub enum Algo {
-    Lz4,
-    Zlib,
-    Zstd,
-}
-
-impl Algo {
-    pub async fn compress(&self, payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
-        match self {
-            Self::Lz4 => Self::lz4_compress(payload, topic),
-            Self::Zlib => Self::zlib_compress(payload, topic).await,
-            Self::Zstd => Self::zstd_compress(payload, topic).await,
-        }
-    }
-
-    pub async fn decompress(&self, payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
-        match self {
-            Self::Lz4 => Self::lz4_decompress(payload, topic),
-            Self::Zlib => Self::zlib_decompress(payload, topic).await,
-            Self::Zstd => Self::zstd_decompress(payload, topic).await,
-        }
-    }
-
-    fn lz4_compress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
-        let mut compressor = FrameEncoder::new(vec![]);
-        compressor.write_all(payload)?;
-        *payload = compressor.finish()?;
-        topic.push_str("/lz4");
-
-        Ok(())
-    }
-
-    async fn zlib_compress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
-        let mut compressor = ZlibEncoder::new(vec![]);
-        compressor.write_all(payload).await?;
-        compressor.shutdown().await?;
-        *payload = compressor.into_inner();
-        topic.push_str("/zlib");
-
-        Ok(())
-    }
-
-    async fn zstd_compress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
-        let mut compressor = ZstdEncoder::new(vec![]);
-        compressor.write_all(payload).await?;
-        compressor.shutdown().await?;
-        *payload = compressor.into_inner();
-        topic.push_str("/zstd");
-
-        Ok(())
-    }
-
-    fn lz4_decompress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
-        let mut decompressor = FrameDecoder::new(&payload[..]);
-        let mut buffer = vec![];
-        decompressor.read_to_end(&mut buffer)?;
-
-        *payload = buffer;
-        *topic = topic.replace("/lz4", "");
-
-        Ok(())
-    }
-
-    async fn zlib_decompress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
-        let mut decompressor = ZlibDecoder::new(vec![]);
-        decompressor.write_all(payload).await?;
-        decompressor.shutdown().await?;
-        *payload = decompressor.into_inner();
-        *topic = topic.replace("/zlib", "");
-
-        Ok(())
-    }
-
-    async fn zstd_decompress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
-        let mut decompressor = ZstdDecoder::new(vec![]);
-        decompressor.write_all(payload).await?;
-        decompressor.shutdown().await?;
-        *payload = decompressor.into_inner();
-        *topic = topic.replace("/zstd", "");
-
-        Ok(())
-    }
+// TODO Don't do any deserialization on payload. Read it a Vec<u8> which is in turn a json
+// TODO which cloud will double deserialize (Batch 1st and messages next)
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+pub struct Payload {
+    #[serde(skip)]
+    pub stream: String,
+    pub sequence: u32,
+    pub timestamp: u64,
+    #[serde(flatten)]
+    pub payload: serde_json::Value,
 }
 
 #[tokio::main]
 async fn main() {
-    for algo in [Algo::Lz4, Algo::Zlib, Algo::Zstd] {
+    z().await;
+    serde();
+}
+
+fn serde() {
+    for algo in [Json] {
+        let original_payload = Payload::default();
+
+        let compressed_payload = algo.serialize(&original_payload).unwrap();
+
+        let decompressed_payload = algo.deserialize(&compressed_payload).unwrap();
+        println!(
+            "{:?} \noriginal: {:?}; \ncompressed: {:?}; len: {} \ndecompressed: {:?};\n",
+            algo,
+            &original_payload,
+            &compressed_payload,
+            compressed_payload.len(),
+            &decompressed_payload,
+        );
+    }
+}
+
+async fn z() {
+    for algo in [Lz4, Zlib, Zstd] {
         let original_payload = "Hello World!".as_bytes().to_vec();
         let original_topic = "hello/world".to_owned();
 
