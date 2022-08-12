@@ -4,7 +4,8 @@ mod compress;
 mod serialization;
 
 use compress::Algo::*;
-use serialization::Algo::*;
+use serde_json::json;
+use serialization::{hard_code_proto, Algo::*};
 
 // TODO Don't do any deserialization on payload. Read it a Vec<u8> which is in turn a json
 // TODO which cloud will double deserialize (Batch 1st and messages next)
@@ -20,45 +21,53 @@ pub struct Payload {
 
 #[tokio::main]
 async fn main() {
-    z().await;
-    serde();
-}
+    let original_payload = Payload {
+        stream: "test.can".to_string(),
+        sequence: 123,
+        timestamp: 123,
+        payload: json!({
+            "data": 100
+        }),
+    };
+    let original_topic = "hello/world".to_owned();
+    println!(
+        "Original; payload: {:?}; topic: {}\n",
+        &original_payload, &original_topic
+    );
 
-fn serde() {
-    for algo in [Json] {
-        let original_payload = Payload::default();
+    let descriptor_pool = hard_code_proto();
+    for algo in [Json, ProtoBuf(&descriptor_pool, "test.can")] {
+        println!("------------\n{}\n------------\n", algo);
+        let serialized_payload = algo.serialize(&original_payload).unwrap();
 
-        let compressed_payload = algo.serialize(&original_payload).unwrap();
-
-        let decompressed_payload = algo.deserialize(&compressed_payload).unwrap();
         println!(
-            "{:?} \noriginal: {:?}; \ncompressed: {:?}; len: {} \ndecompressed: {:?};\n",
-            algo,
-            &original_payload,
-            &compressed_payload,
-            compressed_payload.len(),
-            &decompressed_payload,
+            "serialized: {:?}; len: {}\n",
+            &serialized_payload,
+            serialized_payload.len(),
         );
+
+        for algo in [Lz4, Zlib, Zstd] {
+            z(algo, &serialized_payload, &original_topic).await;
+        }
+
+        let deserialized_payload = algo.deserialize(&serialized_payload).unwrap();
+        println!("deserialized: {:?};", &deserialized_payload,);
     }
 }
 
-async fn z() {
-    for algo in [Lz4, Zlib, Zstd] {
-        let original_payload = "Hello World!".as_bytes().to_vec();
-        let original_topic = "hello/world".to_owned();
+async fn z(algo: compress::Algo, original_payload: &Vec<u8>, original_topic: &str) {
+    let mut compressed_payload = original_payload.clone();
+    let mut compressed_topic = original_topic.to_owned();
+    algo.compress(&mut compressed_payload, &mut compressed_topic)
+        .await
+        .unwrap();
 
-        let mut compressed_payload = original_payload.clone();
-        let mut compressed_topic = original_topic.clone();
-        algo.compress(&mut compressed_payload, &mut compressed_topic)
-            .await
-            .unwrap();
-
-        let mut decompressed_payload = compressed_payload.clone();
-        let mut decompressed_topic = compressed_topic.clone();
-        algo.decompress(&mut decompressed_payload, &mut decompressed_topic)
-            .await
-            .unwrap();
-        println!(
+    let mut decompressed_payload = compressed_payload.clone();
+    let mut decompressed_topic = compressed_topic.clone();
+    algo.decompress(&mut decompressed_payload, &mut decompressed_topic)
+        .await
+        .unwrap();
+    println!(
             "{:?} \noriginal: {:?}; topic: {}; len: {} \ncompressed: {:?}; topic: {}; len: {} \ndecompressed: {:?}; topic: {}; len: {}\n",
             algo,
             &original_payload,
@@ -71,5 +80,4 @@ async fn z() {
             decompressed_topic,
             decompressed_payload.len(),
         );
-    }
 }
