@@ -12,6 +12,10 @@ use crate::Payload;
 pub enum Error {
     #[error("Io error {0}")]
     Io(#[from] std::io::Error),
+    #[error("Bson serialization error {0}")]
+    BsonSer(#[from] bson::ser::Error),
+    #[error("Bson deserialization error {0}")]
+    BsonDe(#[from] bson::de::Error),
     #[error("Json error: {0}")]
     Json(#[from] serde_json::Error),
     #[error("RMP Encode error: {0}")]
@@ -29,7 +33,7 @@ pub enum Error {
 #[derive(Debug, Clone)]
 pub enum Algo<'a> {
     // Avro,
-    // Bson,
+    Bson,
     // Cbor,
     Json,
     // Marshal,
@@ -52,6 +56,7 @@ impl Display for Algo<'_> {
 impl<'a> Algo<'a> {
     pub fn serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
         match self {
+            Self::Bson => self.bson_serialize(payload),
             Self::Json => self.json_serialize(payload),
             Self::MessagePack => self.msgpck_serialize(payload),
             Self::ProtoBuf(descriptor_pool, stream) => {
@@ -62,12 +67,19 @@ impl<'a> Algo<'a> {
 
     pub fn deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
         match self {
+            Self::Bson => self.bson_deserialize(payload),
             Self::Json => self.json_deserialize(payload),
             Self::MessagePack => self.msgpck_deserialize(payload),
             Self::ProtoBuf(descriptor_pool, stream) => {
                 self.proto_deserialize(descriptor_pool, payload, stream)
             }
         }
+    }
+
+    fn bson_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
+        let serialized = bson::to_vec(payload)?;
+
+        Ok(serialized)
     }
 
     fn json_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
@@ -98,6 +110,12 @@ impl<'a> Algo<'a> {
         msg.encode(&mut serialized)?;
 
         Ok(serialized)
+    }
+
+    fn bson_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
+        let deserialized = bson::from_slice(payload)?;
+
+        Ok(deserialized)
     }
 
     fn json_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
