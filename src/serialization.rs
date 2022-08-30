@@ -16,6 +16,10 @@ pub enum Error {
     BsonSer(#[from] bson::ser::Error),
     #[error("Bson deserialization error {0}")]
     BsonDe(#[from] bson::de::Error),
+    #[error("Ciborium serialization error {0}")]
+    CiboriumSer(#[from] ciborium::ser::Error<std::io::Error>),
+    #[error("Ciborium deserialization error {0}")]
+    CiboriumDe(#[from] ciborium::de::Error<std::io::Error>),
     #[error("Json error: {0}")]
     Json(#[from] serde_json::Error),
     #[error("RMP Encode error: {0}")]
@@ -34,7 +38,7 @@ pub enum Error {
 pub enum Algo<'a> {
     // Avro,
     Bson,
-    // Cbor,
+    Cbor,
     Json,
     // Marshal,
     MessagePack,
@@ -57,6 +61,7 @@ impl<'a> Algo<'a> {
     pub fn serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
         match self {
             Self::Bson => self.bson_serialize(payload),
+            Self::Cbor => self.cbor_serialize(payload),
             Self::Json => self.json_serialize(payload),
             Self::MessagePack => self.msgpck_serialize(payload),
             Self::ProtoBuf(descriptor_pool, stream) => {
@@ -68,6 +73,7 @@ impl<'a> Algo<'a> {
     pub fn deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
         match self {
             Self::Bson => self.bson_deserialize(payload),
+            Self::Cbor => self.cbor_deserialize(payload),
             Self::Json => self.json_deserialize(payload),
             Self::MessagePack => self.msgpck_deserialize(payload),
             Self::ProtoBuf(descriptor_pool, stream) => {
@@ -78,6 +84,13 @@ impl<'a> Algo<'a> {
 
     fn bson_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
         let serialized = bson::to_vec(payload)?;
+
+        Ok(serialized)
+    }
+
+    fn cbor_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
+        let mut serialized = vec![];
+        ciborium::ser::into_writer(payload, &mut serialized)?;
 
         Ok(serialized)
     }
@@ -114,6 +127,12 @@ impl<'a> Algo<'a> {
 
     fn bson_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
         let deserialized = bson::from_slice(payload)?;
+
+        Ok(deserialized)
+    }
+
+    fn cbor_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
+        let deserialized = ciborium::de::from_reader(&payload[..])?;
 
         Ok(deserialized)
     }
