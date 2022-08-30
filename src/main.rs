@@ -36,7 +36,7 @@ async fn main() {
     );
 
     let descriptor_pool = hard_code_proto();
-    for algo in [Json, ProtoBuf(&descriptor_pool, "test.can"), MessagePack, Bson, Cbor] {
+    for algo in [Json, ProtoBuf(&descriptor_pool, "test.can"), MessagePack, Bson, Cbor, Pickle] {
         println!("------------\n{}\n------------\n", algo);
         let serialized_payload = algo.serialize(&original_payload).unwrap();
 

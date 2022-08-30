@@ -5,6 +5,7 @@ use std::{
 
 use prost_reflect::{prost::Message, DescriptorPool, DynamicMessage, SerializeOptions};
 use serde_json::{Deserializer, Serializer, Value};
+use serde_pickle::{DeOptions, SerOptions};
 
 use crate::Payload;
 
@@ -22,6 +23,8 @@ pub enum Error {
     CiboriumDe(#[from] ciborium::de::Error<std::io::Error>),
     #[error("Json error: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("Pickle error: {0}")]
+    Pickle(#[from] serde_pickle::Error),
     #[error("RMP Encode error: {0}")]
     RmpEncode(#[from] rmp_serde::encode::Error),
     #[error("RMP Decode error: {0}")]
@@ -42,7 +45,7 @@ pub enum Algo<'a> {
     Json,
     // Marshal,
     MessagePack,
-    // Pickle,
+    Pickle,
     ProtoBuf(&'a DescriptorPool, &'a str),
     // Thrift,
     // Ujson,
@@ -64,6 +67,7 @@ impl<'a> Algo<'a> {
             Self::Cbor => self.cbor_serialize(payload),
             Self::Json => self.json_serialize(payload),
             Self::MessagePack => self.msgpck_serialize(payload),
+            Self::Pickle => self.pickle_serialize(payload),
             Self::ProtoBuf(descriptor_pool, stream) => {
                 self.proto_serialize(descriptor_pool, payload, stream)
             }
@@ -76,6 +80,7 @@ impl<'a> Algo<'a> {
             Self::Cbor => self.cbor_deserialize(payload),
             Self::Json => self.json_deserialize(payload),
             Self::MessagePack => self.msgpck_deserialize(payload),
+            Self::Pickle => self.pickle_deserialize(payload),
             Self::ProtoBuf(descriptor_pool, stream) => {
                 self.proto_deserialize(descriptor_pool, payload, stream)
             }
@@ -103,6 +108,12 @@ impl<'a> Algo<'a> {
 
     fn msgpck_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
         let serialized = rmp_serde::to_vec(payload)?;
+
+        Ok(serialized)
+    }
+
+    fn pickle_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
+        let serialized = serde_pickle::to_vec(payload, SerOptions::new())?;
 
         Ok(serialized)
     }
@@ -145,6 +156,12 @@ impl<'a> Algo<'a> {
 
     fn msgpck_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
         let deserialized = rmp_serde::from_slice(payload)?;
+
+        Ok(deserialized)
+    }
+
+    fn pickle_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
+        let deserialized = serde_pickle::from_slice(payload, DeOptions::new())?;
 
         Ok(deserialized)
     }
