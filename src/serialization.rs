@@ -14,6 +14,10 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error("Json error: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("RMP Encode error: {0}")]
+    RmpEncode(#[from] rmp_serde::encode::Error),
+    #[error("RMP Decode error: {0}")]
+    RmpDecode(#[from] rmp_serde::decode::Error),
     #[error("Prost reflect descriptor error = {0}")]
     ProstDescriptor(#[from] prost_reflect::DescriptorError),
     #[error("Prost reflect encode error = {0}")]
@@ -29,7 +33,7 @@ pub enum Algo<'a> {
     // Cbor,
     Json,
     // Marshal,
-    // MessagePack,
+    MessagePack,
     // Pickle,
     ProtoBuf(&'a DescriptorPool, &'a str),
     // Thrift,
@@ -49,6 +53,7 @@ impl<'a> Algo<'a> {
     pub fn serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
         match self {
             Self::Json => self.json_serialize(payload),
+            Self::MessagePack => self.msgpck_serialize(payload),
             Self::ProtoBuf(descriptor_pool, stream) => {
                 self.proto_serialize(descriptor_pool, payload, stream)
             }
@@ -58,6 +63,7 @@ impl<'a> Algo<'a> {
     pub fn deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
         match self {
             Self::Json => self.json_deserialize(payload),
+            Self::MessagePack => self.msgpck_deserialize(payload),
             Self::ProtoBuf(descriptor_pool, stream) => {
                 self.proto_deserialize(descriptor_pool, payload, stream)
             }
@@ -66,6 +72,12 @@ impl<'a> Algo<'a> {
 
     fn json_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
         let serialized = serde_json::to_vec(payload)?;
+
+        Ok(serialized)
+    }
+
+    fn msgpck_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
+        let serialized = rmp_serde::to_vec(payload)?;
 
         Ok(serialized)
     }
@@ -90,6 +102,12 @@ impl<'a> Algo<'a> {
 
     fn json_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
         let deserialized = serde_json::from_slice(payload)?;
+
+        Ok(deserialized)
+    }
+
+    fn msgpck_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
+        let deserialized = rmp_serde::from_slice(payload)?;
 
         Ok(deserialized)
     }
