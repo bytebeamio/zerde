@@ -81,7 +81,7 @@ impl<'a> Algo<'a> {
         }
     }
 
-    pub fn deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
+    pub fn deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
         match self {
             Self::Avro(schema) => self.avro_deserialize(payload, schema),
             Self::Bson => self.bson_deserialize(payload),
@@ -154,39 +154,39 @@ impl<'a> Algo<'a> {
         Ok(serialized)
     }
 
-    fn avro_deserialize(&self, payload: &Vec<u8>, schema: &Schema) -> Result<Payload, Error> {
-        let mut reader = Reader::with_schema(&payload[..], schema)?;
+    fn avro_deserialize(&self, payload: &[u8], schema: &Schema) -> Result<Payload, Error> {
+        let mut reader = Reader::with_schema(payload, schema)?;
         let value = reader.next().ok_or(Error::AvroMissing)?;
         let deserialized = from_value(&value)?;
 
         Ok(deserialized)
     }
 
-    fn bson_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
+    fn bson_deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
         let deserialized = bson::from_slice(payload)?;
 
         Ok(deserialized)
     }
 
-    fn cbor_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
-        let deserialized = ciborium::de::from_reader(&payload[..])?;
+    fn cbor_deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
+        let deserialized = ciborium::de::from_reader(payload)?;
 
         Ok(deserialized)
     }
 
-    fn json_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
+    fn json_deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
         let deserialized = serde_json::from_slice(payload)?;
 
         Ok(deserialized)
     }
 
-    fn msgpck_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
+    fn msgpck_deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
         let deserialized = rmp_serde::from_slice(payload)?;
 
         Ok(deserialized)
     }
 
-    fn pickle_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
+    fn pickle_deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
         let deserialized = serde_pickle::from_slice(payload, DeOptions::new())?;
 
         Ok(deserialized)
@@ -195,12 +195,12 @@ impl<'a> Algo<'a> {
     fn proto_deserialize(
         &self,
         descriptor_pool: &DescriptorPool,
-        payload: &Vec<u8>,
+        payload: &[u8],
         stream: &str,
     ) -> Result<Payload, Error> {
         let desc = descriptor_pool.get_message_by_name(stream).unwrap();
 
-        let deserialized = DynamicMessage::decode(desc, &payload[..])?;
+        let deserialized = DynamicMessage::decode(desc, payload)?;
         let options = SerializeOptions::new().stringify_64_bit_integers(false);
         let mut json_serialized = vec![];
         let mut serializer = Serializer::new(&mut json_serialized);
