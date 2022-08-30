@@ -10,6 +10,7 @@ thiserror = "1"
 async-compression = { version = "0.3", features = ["tokio", "zstd", "zlib"] }
 lz4_flex = "0.9.3"
 # Serialization
+avrow = "0.2.1"
 bson = "2.4"
 rmp-serde = "1.1.0"
 ciborium = "0.2"

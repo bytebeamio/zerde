@@ -7,6 +7,8 @@ use compress::Algo::*;
 use serde_json::json;
 use serialization::{hard_code_proto, Algo::*};
 
+use crate::serialization::hard_code_avro;
+
 // TODO Don't do any deserialization on payload. Read it a Vec<u8> which is in turn a json
 // TODO which cloud will double deserialize (Batch 1st and messages next)
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
@@ -36,7 +38,17 @@ async fn main() {
     );
 
     let descriptor_pool = hard_code_proto();
-    for algo in [Json, ProtoBuf(&descriptor_pool, "test.can"), MessagePack, Bson, Cbor, Pickle] {
+    let schema = hard_code_avro();
+
+    for algo in [
+        Json,
+        ProtoBuf(&descriptor_pool, "test.can"),
+        MessagePack,
+        Bson,
+        Cbor,
+        Pickle,
+        Avro(&schema),
+    ] {
         println!("------------\n{}\n------------\n", algo);
         let serialized_payload = algo.serialize(&original_payload).unwrap();
 

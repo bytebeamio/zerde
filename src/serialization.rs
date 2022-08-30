@@ -1,8 +1,10 @@
 use std::{
     fmt::Display,
     io::{Read, Write},
+    str::FromStr,
 };
 
+use avrow::{from_value, to_value, Reader, Schema, Writer};
 use prost_reflect::{prost::Message, DescriptorPool, DynamicMessage, SerializeOptions};
 use serde_json::{Deserializer, Serializer, Value};
 use serde_pickle::{DeOptions, SerOptions};
@@ -13,6 +15,10 @@ use crate::Payload;
 pub enum Error {
     #[error("Io error {0}")]
     Io(#[from] std::io::Error),
+    #[error("Avrow serialization error {0}")]
+    Avrow(#[from] avrow::AvrowErr),
+    #[error("Avro serialization missing element")]
+    AvroMissing,
     #[error("Bson serialization error {0}")]
     BsonSer(#[from] bson::ser::Error),
     #[error("Bson deserialization error {0}")]
@@ -39,7 +45,7 @@ pub enum Error {
 
 #[derive(Debug, Clone)]
 pub enum Algo<'a> {
-    // Avro,
+    Avro(&'a Schema),
     Bson,
     Cbor,
     Json,
@@ -63,6 +69,7 @@ impl Display for Algo<'_> {
 impl<'a> Algo<'a> {
     pub fn serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
         match self {
+            Self::Avro(schema) => self.avro_serialize(payload, schema),
             Self::Bson => self.bson_serialize(payload),
             Self::Cbor => self.cbor_serialize(payload),
             Self::Json => self.json_serialize(payload),
@@ -76,6 +83,7 @@ impl<'a> Algo<'a> {
 
     pub fn deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
         match self {
+            Self::Avro(schema) => self.avro_deserialize(payload, schema),
             Self::Bson => self.bson_deserialize(payload),
             Self::Cbor => self.cbor_deserialize(payload),
             Self::Json => self.json_deserialize(payload),
@@ -85,6 +93,16 @@ impl<'a> Algo<'a> {
                 self.proto_deserialize(descriptor_pool, payload, stream)
             }
         }
+    }
+
+    fn avro_serialize(&self, payload: &Payload, schema: &Schema) -> Result<Vec<u8>, Error> {
+        let mut serialized = vec![];
+        let mut writer = Writer::new(schema, &mut serialized)?;
+        let json = to_value(payload)?;
+        writer.write(json)?;
+        writer.flush()?;
+
+        Ok(serialized)
     }
 
     fn bson_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
@@ -134,6 +152,14 @@ impl<'a> Algo<'a> {
         msg.encode(&mut serialized)?;
 
         Ok(serialized)
+    }
+
+    fn avro_deserialize(&self, payload: &Vec<u8>, schema: &Schema) -> Result<Payload, Error> {
+        let mut reader = Reader::with_schema(&payload[..], schema)?;
+        let value = reader.next().ok_or(Error::AvroMissing)?;
+        let deserialized = from_value(&value)?;
+
+        Ok(deserialized)
     }
 
     fn bson_deserialize(&self, payload: &Vec<u8>) -> Result<Payload, Error> {
@@ -269,4 +295,26 @@ pub fn hard_code_proto() -> DescriptorPool {
         .unwrap();
 
     DescriptorPool::decode(file_descriptor_set.as_slice()).unwrap()
+}
+
+// TODO: replace type information with following
+// "type": "record",
+// "name": "can",
+// "fields" : [
+//     {"name": "sequence", "type": "int"},
+//     {"name": "timestamp", "type": "long"},
+//     {"name": "data", "type": "long"}
+// ]
+pub fn hard_code_avro() -> Schema {
+    Schema::from_str(
+        r##"
+    {
+        "namespace": "test",
+        "type": "map",
+        "values": "long",
+        "default": ""
+    }
+"##,
+    )
+    .unwrap()
 }
