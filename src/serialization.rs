@@ -110,9 +110,9 @@ impl<'a> Algo<'a> {
     //     Ok(serialized)
     // }
 
-    fn bson_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
+    fn bson_serialize(&self, payload: &[Payload]) -> Result<Vec<u8>, Error> {
         let array = PayloadArray {
-            messages: payload.clone(),
+            messages: payload.to_owned(),
         };
         let serialized = bson::to_vec(&array)?;
 

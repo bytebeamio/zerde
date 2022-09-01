@@ -11,7 +11,7 @@ pub enum Error {
     #[error("LZ4 compression error: {0}")]
     Lz4(#[from] lz4_flex::frame::Error),
     #[error("Snap compression error: {0}")]
-    Snap(#[from] snap::write::IntoInnerError<snap::write::FrameEncoder<Vec<u8>>>),
+    Snap(Box<snap::write::IntoInnerError<snap::write::FrameEncoder<Vec<u8>>>>),
 }
 
 #[derive(Debug, Clone)]
@@ -53,7 +53,9 @@ impl Algo {
     fn snappy_compress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
         let mut compressor = snap::write::FrameEncoder::new(vec![]);
         compressor.write_all(payload)?;
-        *payload = compressor.into_inner()?;
+        *payload = compressor
+            .into_inner()
+            .map_err(|e| Error::Snap(Box::new(e)))?;
         topic.push_str("/snappy");
 
         Ok(())
