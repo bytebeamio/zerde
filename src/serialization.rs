@@ -3,7 +3,7 @@ use std::{
     io::{Read, Write},
 };
 
-use apache_avro::{from_value, to_value, Reader, Schema, Writer};
+// use apache_avro::{from_value, to_value, Reader, Schema, Writer};
 use prost_reflect::{prost::Message, DescriptorPool, DynamicMessage, SerializeOptions};
 use serde::{Deserialize, Serialize};
 use serde_json::{Deserializer, Serializer};
@@ -15,10 +15,10 @@ use crate::Payload;
 pub enum Error {
     #[error("Io error {0}")]
     Io(#[from] std::io::Error),
-    #[error("Avro serialization error {0}")]
-    Avro(#[from] apache_avro::Error),
-    #[error("Avro serialization missing element")]
-    AvroMissing,
+    // #[error("Avro serialization error {0}")]
+    // Avro(#[from] apache_avro::Error),
+    // #[error("Avro serialization missing element")]
+    // AvroMissing,
     #[error("Bson serialization error {0}")]
     BsonSer(#[from] bson::ser::Error),
     #[error("Bson deserialization error {0}")]
@@ -50,7 +50,7 @@ struct PayloadArray {
 
 #[derive(Debug, Clone)]
 pub enum Algo<'a> {
-    Avro(&'a Schema),
+    // Avro(&'a Schema),
     Bson,
     Cbor,
     Json,
@@ -74,7 +74,7 @@ impl Display for Algo<'_> {
 impl<'a> Algo<'a> {
     pub fn serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
         match self {
-            Self::Avro(schema) => self.avro_serialize(payload, schema),
+            // Self::Avro(schema) => self.avro_serialize(payload, schema),
             Self::Bson => self.bson_serialize(payload),
             Self::Cbor => self.cbor_serialize(payload),
             Self::Json => self.json_serialize(payload),
@@ -88,7 +88,7 @@ impl<'a> Algo<'a> {
 
     pub fn deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
         match self {
-            Self::Avro(schema) => self.avro_deserialize(payload, schema),
+            // Self::Avro(schema) => self.avro_deserialize(payload, schema),
             Self::Bson => self.bson_deserialize(payload),
             Self::Cbor => self.cbor_deserialize(payload),
             Self::Json => self.json_deserialize(payload),
@@ -100,15 +100,15 @@ impl<'a> Algo<'a> {
         }
     }
 
-    fn avro_serialize(&self, payload: &Vec<Payload>, schema: &Schema) -> Result<Vec<u8>, Error> {
-        let mut serialized = vec![];
-        let mut writer = Writer::new(schema, &mut serialized);
-        let value = to_value(payload)?;
-        writer.append(value)?;
-        writer.flush()?;
+    // fn avro_serialize(&self, payload: &Vec<Payload>, schema: &Schema) -> Result<Vec<u8>, Error> {
+    //     let mut serialized = vec![];
+    //     let mut writer = Writer::new(schema, &mut serialized);
+    //     let value = to_value(payload)?;
+    //     writer.append(value)?;
+    //     writer.flush()?;
 
-        Ok(serialized)
-    }
+    //     Ok(serialized)
+    // }
 
     fn bson_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
         let array = PayloadArray {
@@ -165,13 +165,13 @@ impl<'a> Algo<'a> {
         Ok(serialized)
     }
 
-    fn avro_deserialize(&self, payload: &[u8], schema: &Schema) -> Result<Vec<Payload>, Error> {
-        let mut reader = Reader::with_schema(schema, payload)?;
-        let value = reader.next().ok_or(Error::AvroMissing)??;
-        let deserialized = from_value(&value)?;
+    // fn avro_deserialize(&self, payload: &[u8], schema: &Schema) -> Result<Vec<Payload>, Error> {
+    //     let mut reader = Reader::with_schema(schema, payload)?;
+    //     let value = reader.next().ok_or(Error::AvroMissing)??;
+    //     let deserialized = from_value(&value)?;
 
-        Ok(deserialized)
-    }
+    //     Ok(deserialized)
+    // }
 
     fn bson_deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
         let deserialized: PayloadArray = bson::from_slice(payload)?;
@@ -312,18 +312,18 @@ pub fn hard_code_proto() -> DescriptorPool {
 //     {"name": "timestamp", "type": "long"},
 //     {"name": "data", "type": "long"}
 // ]
-pub fn hard_code_avro() -> Schema {
-    Schema::parse_str(
-        r##"
-    {
-        "namespace": "test",
-        "type": "array",
-        "items": {
-            "type": "map",
-            "values": "long"
-        }
-    }
-"##,
-    )
-    .unwrap()
-}
+// pub fn hard_code_avro() -> Schema {
+//     Schema::parse_str(
+//         r##"
+//     {
+//         "namespace": "test",
+//         "type": "array",
+//         "items": {
+//             "type": "map",
+//             "values": "long"
+//         }
+//     }
+// "##,
+//     )
+//     .unwrap()
+// }
