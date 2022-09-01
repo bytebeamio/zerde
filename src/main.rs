@@ -23,14 +23,15 @@ pub struct Payload {
 
 #[tokio::main]
 async fn main() {
-    let original_payload = Payload {
-        stream: "test.can".to_string(),
-        sequence: 123,
-        timestamp: 123,
-        payload: json!({
-            "data": 100
-        }),
-    };
+    let mut original_payload = vec![];
+    for i in 1..101 {
+        original_payload.push(Payload {
+            stream: "test.can".to_string(),
+            sequence: i,
+            timestamp: i as u64,
+            payload: json!({ "data": i * 100 + i }),
+        });
+    }
     let original_topic = "hello/world".to_owned();
     println!(
         "Original; payload: {:?}; topic: {}\n",
@@ -42,7 +43,7 @@ async fn main() {
 
     for algo in [
         Json,
-        ProtoBuf(&descriptor_pool, "test.can"),
+        ProtoBuf(&descriptor_pool, "test.canList"),
         MessagePack,
         Bson,
         Cbor,

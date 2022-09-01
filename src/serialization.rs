@@ -5,7 +5,8 @@ use std::{
 
 use apache_avro::{from_value, to_value, Reader, Schema, Writer};
 use prost_reflect::{prost::Message, DescriptorPool, DynamicMessage, SerializeOptions};
-use serde_json::{Deserializer, Serializer, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::{Deserializer, Serializer};
 use serde_pickle::{DeOptions, SerOptions};
 
 use crate::Payload;
@@ -42,6 +43,11 @@ pub enum Error {
     ProstDecode(#[from] prost_reflect::prost::DecodeError),
 }
 
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+struct PayloadArray {
+    messages: Vec<Payload>,
+}
+
 #[derive(Debug, Clone)]
 pub enum Algo<'a> {
     Avro(&'a Schema),
@@ -66,7 +72,7 @@ impl Display for Algo<'_> {
 }
 
 impl<'a> Algo<'a> {
-    pub fn serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
+    pub fn serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
         match self {
             Self::Avro(schema) => self.avro_serialize(payload, schema),
             Self::Bson => self.bson_serialize(payload),
@@ -80,7 +86,7 @@ impl<'a> Algo<'a> {
         }
     }
 
-    pub fn deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
+    pub fn deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
         match self {
             Self::Avro(schema) => self.avro_deserialize(payload, schema),
             Self::Bson => self.bson_deserialize(payload),
@@ -94,7 +100,7 @@ impl<'a> Algo<'a> {
         }
     }
 
-    fn avro_serialize(&self, payload: &Payload, schema: &Schema) -> Result<Vec<u8>, Error> {
+    fn avro_serialize(&self, payload: &Vec<Payload>, schema: &Schema) -> Result<Vec<u8>, Error> {
         let mut serialized = vec![];
         let mut writer = Writer::new(schema, &mut serialized);
         let value = to_value(payload)?;
@@ -104,32 +110,35 @@ impl<'a> Algo<'a> {
         Ok(serialized)
     }
 
-    fn bson_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
-        let serialized = bson::to_vec(payload)?;
+    fn bson_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
+        let array = PayloadArray {
+            messages: payload.clone(),
+        };
+        let serialized = bson::to_vec(&array)?;
 
         Ok(serialized)
     }
 
-    fn cbor_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
+    fn cbor_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
         let mut serialized = vec![];
         ciborium::ser::into_writer(payload, &mut serialized)?;
 
         Ok(serialized)
     }
 
-    fn json_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
+    fn json_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
         let serialized = serde_json::to_vec(payload)?;
 
         Ok(serialized)
     }
 
-    fn msgpck_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
+    fn msgpck_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
         let serialized = rmp_serde::to_vec(payload)?;
 
         Ok(serialized)
     }
 
-    fn pickle_serialize(&self, payload: &Payload) -> Result<Vec<u8>, Error> {
+    fn pickle_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
         let serialized = serde_pickle::to_vec(payload, SerOptions::new())?;
 
         Ok(serialized)
@@ -138,11 +147,14 @@ impl<'a> Algo<'a> {
     fn proto_serialize(
         &self,
         descriptor_pool: &DescriptorPool,
-        payload: &Payload,
+        payload: &Vec<Payload>,
         stream: &str,
     ) -> Result<Vec<u8>, Error> {
         let desc = descriptor_pool.get_message_by_name(stream).unwrap();
-        let json_serialized = self.json_serialize(payload)?;
+        let payload = PayloadArray {
+            messages: payload.to_owned(),
+        };
+        let json_serialized = serde_json::to_vec(&payload)?;
 
         let mut deserializer = Deserializer::from_slice(&json_serialized);
         let msg = DynamicMessage::deserialize(desc, &mut deserializer)?;
@@ -153,7 +165,7 @@ impl<'a> Algo<'a> {
         Ok(serialized)
     }
 
-    fn avro_deserialize(&self, payload: &[u8], schema: &Schema) -> Result<Payload, Error> {
+    fn avro_deserialize(&self, payload: &[u8], schema: &Schema) -> Result<Vec<Payload>, Error> {
         let mut reader = Reader::with_schema(schema, payload)?;
         let value = reader.next().ok_or(Error::AvroMissing)??;
         let deserialized = from_value(&value)?;
@@ -161,31 +173,31 @@ impl<'a> Algo<'a> {
         Ok(deserialized)
     }
 
-    fn bson_deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
-        let deserialized = bson::from_slice(payload)?;
+    fn bson_deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
+        let deserialized: PayloadArray = bson::from_slice(payload)?;
 
-        Ok(deserialized)
+        Ok(deserialized.messages)
     }
 
-    fn cbor_deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
+    fn cbor_deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
         let deserialized = ciborium::de::from_reader(payload)?;
 
         Ok(deserialized)
     }
 
-    fn json_deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
+    fn json_deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
         let deserialized = serde_json::from_slice(payload)?;
 
         Ok(deserialized)
     }
 
-    fn msgpck_deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
+    fn msgpck_deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
         let deserialized = rmp_serde::from_slice(payload)?;
 
         Ok(deserialized)
     }
 
-    fn pickle_deserialize(&self, payload: &[u8]) -> Result<Payload, Error> {
+    fn pickle_deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
         let deserialized = serde_pickle::from_slice(payload, DeOptions::new())?;
 
         Ok(deserialized)
@@ -196,7 +208,7 @@ impl<'a> Algo<'a> {
         descriptor_pool: &DescriptorPool,
         payload: &[u8],
         stream: &str,
-    ) -> Result<Payload, Error> {
+    ) -> Result<Vec<Payload>, Error> {
         let desc = descriptor_pool.get_message_by_name(stream).unwrap();
 
         let deserialized = DynamicMessage::decode(desc, payload)?;
@@ -204,13 +216,9 @@ impl<'a> Algo<'a> {
         let mut json_serialized = vec![];
         let mut serializer = Serializer::new(&mut json_serialized);
         deserialized.serialize_with_options(&mut serializer, &options)?;
+        let array: PayloadArray = serde_json::from_slice(&json_serialized)?;
 
-        let json: Value = serde_json::from_slice(&json_serialized)?;
-
-        let mut deserialized: Payload = serde_json::from_value(json)?;
-        deserialized.stream = stream.to_string();
-
-        Ok(deserialized)
+        Ok(array.messages)
     }
 }
 
@@ -309,9 +317,11 @@ pub fn hard_code_avro() -> Schema {
         r##"
     {
         "namespace": "test",
-        "type": "map",
-        "values": "long",
-        "default": ""
+        "type": "array",
+        "items": {
+            "type": "map",
+            "values": "long"
+        }
     }
 "##,
     )
