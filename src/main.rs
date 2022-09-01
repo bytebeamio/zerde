@@ -11,7 +11,7 @@ use crate::serialization::hard_code_avro;
 
 // TODO Don't do any deserialization on payload. Read it a Vec<u8> which is in turn a json
 // TODO which cloud will double deserialize (Batch 1st and messages next)
-#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
 pub struct Payload {
     #[serde(skip)]
     pub stream: String,
@@ -26,17 +26,17 @@ async fn main() {
     let mut original_payload = vec![];
     for i in 1..101 {
         original_payload.push(Payload {
-            stream: "test.can".to_string(),
+            stream: String::new(),
             sequence: i,
             timestamp: i as u64,
             payload: json!({ "data": i * 100 + i }),
         });
     }
     let original_topic = "hello/world".to_owned();
-    println!(
-        "Original; payload: {:?}; topic: {}\n",
-        &original_payload, &original_topic
-    );
+    // println!(
+    //     "Original; payload: {:?}; topic: {}\n",
+    //     &original_payload, &original_topic
+    // );
 
     let descriptor_pool = hard_code_proto();
     let schema = hard_code_avro();
@@ -50,21 +50,24 @@ async fn main() {
         Pickle,
         Avro(&schema),
     ] {
-        println!("------------\n{}\n------------\n", algo);
+        println!("\n------------\n{}\n------------", algo);
         let serialized_payload = algo.serialize(&original_payload).unwrap();
 
-        println!(
-            "serialized: {:?}; len: {}\n",
-            &serialized_payload,
-            serialized_payload.len(),
-        );
+        // println!(
+        //     "serialized: {:?}; len: {}\n",
+        //     &serialized_payload,
+        //     serialized_payload.len(),
+        // );
 
         for algo in [Lz4, Snappy, Zlib, Zstd] {
             z(algo, &serialized_payload, &original_topic).await;
         }
 
         let deserialized_payload = algo.deserialize(&serialized_payload).unwrap();
-        println!("deserialized: {:?};", &deserialized_payload,);
+        println!(
+            "original == deserialized: {:?};",
+            original_payload == deserialized_payload,
+        );
     }
 }
 
@@ -80,17 +83,15 @@ async fn z(algo: compress::Algo, original_payload: &Vec<u8>, original_topic: &st
     algo.decompress(&mut decompressed_payload, &mut decompressed_topic)
         .await
         .unwrap();
+    // println!("compressed: {:?}", compressed_payload);
     println!(
-            "{:?} \noriginal: {:?}; topic: {}; len: {} \ncompressed: {:?}; topic: {}; len: {} \ndecompressed: {:?}; topic: {}; len: {}\n",
+            "{:?} \noriginal topic: {}; len: {} \ncompressed topic: {}; len: {} \noriginal == decompressed: {}; same topic: {}; \n",
             algo,
-            &original_payload,
             original_topic,
             original_payload.len(),
-            &compressed_payload,
             compressed_topic,
             compressed_payload.len(),
-            &decompressed_payload,
-            decompressed_topic,
-            decompressed_payload.len(),
+            original_payload == &decompressed_payload,
+            original_topic == decompressed_topic,
         );
 }
