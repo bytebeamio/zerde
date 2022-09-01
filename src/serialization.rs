@@ -1,6 +1,7 @@
 use std::{
     fmt::Display,
     io::{Read, Write},
+    time::Instant,
 };
 
 // use apache_avro::{from_value, to_value, Reader, Schema, Writer};
@@ -73,7 +74,8 @@ impl Display for Algo<'_> {
 
 impl<'a> Algo<'a> {
     pub fn serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
-        match self {
+        let now = Instant::now();
+        let serialized = match self {
             // Self::Avro(schema) => self.avro_serialize(payload, schema),
             Self::Bson => self.bson_serialize(payload),
             Self::Cbor => self.cbor_serialize(payload),
@@ -83,11 +85,15 @@ impl<'a> Algo<'a> {
             Self::ProtoBuf(descriptor_pool, stream) => {
                 self.proto_serialize(descriptor_pool, payload, stream)
             }
-        }
+        };
+        println!("Serialization completed in {}ms", now.elapsed().as_millis());
+
+        serialized
     }
 
     pub fn deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
-        match self {
+        let now = Instant::now();
+        let deserialized = match self {
             // Self::Avro(schema) => self.avro_deserialize(payload, schema),
             Self::Bson => self.bson_deserialize(payload),
             Self::Cbor => self.cbor_deserialize(payload),
@@ -97,7 +103,13 @@ impl<'a> Algo<'a> {
             Self::ProtoBuf(descriptor_pool, stream) => {
                 self.proto_deserialize(descriptor_pool, payload, stream)
             }
-        }
+        };
+        println!(
+            "Deserialization completed in {}ms",
+            now.elapsed().as_millis()
+        );
+
+        deserialized
     }
 
     // fn avro_serialize(&self, payload: &Vec<Payload>, schema: &Schema) -> Result<Vec<u8>, Error> {

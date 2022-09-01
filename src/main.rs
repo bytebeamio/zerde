@@ -72,6 +72,8 @@ async fn main() {
 }
 
 async fn z(algo: compress::Algo, original_payload: &Vec<u8>, original_topic: &str) {
+    println!("{:?}", algo);
+
     let mut compressed_payload = original_payload.clone();
     let mut compressed_topic = original_topic.to_owned();
     algo.compress(&mut compressed_payload, &mut compressed_topic)
@@ -84,9 +86,7 @@ async fn z(algo: compress::Algo, original_payload: &Vec<u8>, original_topic: &st
         .await
         .unwrap();
     // println!("compressed: {:?}", compressed_payload);
-    println!(
-            "{:?} \noriginal topic: {}; len: {} \ncompressed topic: {}; len: {} \noriginal == decompressed: {}; same topic: {}; \n",
-            algo,
+    println!("original topic: {}; len: {} \ncompressed topic: {}; len: {} \noriginal == decompressed: {}; same topic: {}; \n",
             original_topic,
             original_payload.len(),
             compressed_topic,

@@ -1,4 +1,7 @@
-use std::io::{Read, Write};
+use std::{
+    io::{Read, Write},
+    time::Instant,
+};
 
 use async_compression::tokio::write::{ZlibDecoder, ZlibEncoder, ZstdDecoder, ZstdEncoder};
 use lz4_flex::frame::{FrameDecoder, FrameEncoder};
@@ -24,21 +27,29 @@ pub enum Algo {
 
 impl Algo {
     pub async fn compress(&self, payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
-        match self {
+        let now = Instant::now();
+        let compressed = match self {
             Self::Lz4 => Self::lz4_compress(payload, topic),
             Self::Snappy => Self::snappy_compress(payload, topic),
             Self::Zlib => Self::zlib_compress(payload, topic).await,
             Self::Zstd => Self::zstd_compress(payload, topic).await,
-        }
+        };
+        println!("Compression completed in {}ms", now.elapsed().as_millis());
+
+        compressed
     }
 
     pub async fn decompress(&self, payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
-        match self {
+        let now = Instant::now();
+        let decompressed = match self {
             Self::Lz4 => Self::lz4_decompress(payload, topic),
             Self::Snappy => Self::snappy_decompress(payload, topic),
             Self::Zlib => Self::zlib_decompress(payload, topic).await,
             Self::Zstd => Self::zstd_decompress(payload, topic).await,
-        }
+        };
+        println!("Decompression completed in {}ms", now.elapsed().as_millis());
+
+        decompressed
     }
 
     fn lz4_compress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
