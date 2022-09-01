@@ -9,6 +9,7 @@ thiserror = "1"
 # Compression
 async-compression = { version = "0.3", features = ["tokio", "zstd", "zlib"] }
 lz4_flex = "0.9.3"
+snap = "1"
 # Serialization
 apache-avro = "0.14"
 bson = "2.4"

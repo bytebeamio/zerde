@@ -59,7 +59,7 @@ async fn main() {
             serialized_payload.len(),
         );
 
-        for algo in [Lz4, Zlib, Zstd] {
+        for algo in [Lz4, Snappy, Zlib, Zstd] {
             z(algo, &serialized_payload, &original_topic).await;
         }
 

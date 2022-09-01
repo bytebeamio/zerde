@@ -10,11 +10,14 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error("LZ4 compression error: {0}")]
     Lz4(#[from] lz4_flex::frame::Error),
+    #[error("Snap compression error: {0}")]
+    Snap(#[from] snap::write::IntoInnerError<snap::write::FrameEncoder<Vec<u8>>>),
 }
 
 #[derive(Debug, Clone)]
 pub enum Algo {
     Lz4,
+    Snappy,
     Zlib,
     Zstd,
 }
@@ -23,6 +26,7 @@ impl Algo {
     pub async fn compress(&self, payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
         match self {
             Self::Lz4 => Self::lz4_compress(payload, topic),
+            Self::Snappy => Self::snappy_compress(payload, topic),
             Self::Zlib => Self::zlib_compress(payload, topic).await,
             Self::Zstd => Self::zstd_compress(payload, topic).await,
         }
@@ -31,6 +35,7 @@ impl Algo {
     pub async fn decompress(&self, payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
         match self {
             Self::Lz4 => Self::lz4_decompress(payload, topic),
+            Self::Snappy => Self::snappy_decompress(payload, topic),
             Self::Zlib => Self::zlib_decompress(payload, topic).await,
             Self::Zstd => Self::zstd_decompress(payload, topic).await,
         }
@@ -41,6 +46,15 @@ impl Algo {
         compressor.write_all(payload)?;
         *payload = compressor.finish()?;
         topic.push_str("/lz4");
+
+        Ok(())
+    }
+
+    fn snappy_compress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
+        let mut compressor = snap::write::FrameEncoder::new(vec![]);
+        compressor.write_all(payload)?;
+        *payload = compressor.into_inner()?;
+        topic.push_str("/snappy");
 
         Ok(())
     }
@@ -72,6 +86,17 @@ impl Algo {
 
         *payload = buffer;
         *topic = topic.replace("/lz4", "");
+
+        Ok(())
+    }
+
+    fn snappy_decompress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
+        let mut decompressor = snap::read::FrameDecoder::new(&payload[..]);
+        let mut buffer = vec![];
+        decompressor.read_to_end(&mut buffer)?;
+
+        *payload = buffer;
+        *topic = topic.replace("/snappy", "");
 
         Ok(())
     }
