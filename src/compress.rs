@@ -34,7 +34,7 @@ impl Algo {
             Self::Zlib => Self::zlib_compress(payload, topic).await,
             Self::Zstd => Self::zstd_compress(payload, topic).await,
         };
-        println!("Compression completed in {}ms", now.elapsed().as_millis());
+        println!("Compression completed in {}micros", now.elapsed().as_micros());
 
         compressed
     }
@@ -47,7 +47,7 @@ impl Algo {
             Self::Zlib => Self::zlib_decompress(payload, topic).await,
             Self::Zstd => Self::zstd_decompress(payload, topic).await,
         };
-        println!("Decompression completed in {}ms", now.elapsed().as_millis());
+        println!("Decompression completed in {}micros", now.elapsed().as_micros());
 
         decompressed
     }

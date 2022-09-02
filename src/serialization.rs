@@ -86,7 +86,7 @@ impl<'a> Algo<'a> {
                 self.proto_serialize(descriptor_pool, payload, stream)
             }
         };
-        println!("Serialization completed in {}ms", now.elapsed().as_millis());
+        println!("Serialization completed in {}micros", now.elapsed().as_micros());
 
         serialized
     }
@@ -105,8 +105,8 @@ impl<'a> Algo<'a> {
             }
         };
         println!(
-            "Deserialization completed in {}ms",
-            now.elapsed().as_millis()
+            "Deserialization completed in {}micros",
+            now.elapsed().as_micros()
         );
 
         deserialized
