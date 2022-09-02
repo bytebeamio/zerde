@@ -1,49 +1,57 @@
-use serde::{Deserialize, Serialize};
+use base::{Payload, SimulatorConfig, Stream};
 
+mod base;
 mod compress;
 mod serialization;
+mod simulator;
 
 use compress::Algo::*;
-use serde_json::json;
+use flume::bounded;
+use log::error;
+use prost_reflect::DescriptorPool;
 use serialization::{hard_code_proto, Algo::*};
 
 // use crate::serialization::hard_code_avro;
 
-// TODO Don't do any deserialization on payload. Read it a Vec<u8> which is in turn a json
-// TODO which cloud will double deserialize (Batch 1st and messages next)
-#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
-pub struct Payload {
-    #[serde(skip)]
-    pub stream: String,
-    pub sequence: u32,
-    pub timestamp: u64,
-    #[serde(flatten)]
-    pub payload: serde_json::Value,
-}
-
 #[tokio::main]
 async fn main() {
-    let mut original_payload = vec![];
-    for i in 1..101 {
-        original_payload.push(Payload {
-            stream: String::new(),
-            sequence: i,
-            timestamp: i as u64,
-            payload: json!({ "data": i * 100 + i }),
-        });
+    let (data_tx, data_rx) = bounded(10);
+    std::thread::spawn(|| {
+        if let Err(e) = simulator::start(
+            data_tx,
+            &SimulatorConfig {
+                num_devices: 10,
+                gps_paths: "./paths".to_string(),
+            },
+        ) {
+            error!("Simulator error: {}", e);
+        }
+    });
+
+    let descriptor_pool = hard_code_proto();
+    // let schema = hard_code_avro();
+
+    loop {
+        let next = data_rx.recv_async().await.unwrap();
+        let payload = next.buffer;
+        let topic = next.topic.as_str();
+        serz(&descriptor_pool, topic, payload).await
     }
-    let original_topic = "hello/world".to_owned();
+}
+
+async fn serz(
+    descriptor_pool: &DescriptorPool,
+    original_topic: &str,
+    original_payload: Vec<Payload>,
+) {
     // println!(
     //     "Original; payload: {:?}; topic: {}\n",
     //     &original_payload, &original_topic
     // );
 
-    let descriptor_pool = hard_code_proto();
-    // let schema = hard_code_avro();
-
     for algo in [
         Json,
-        ProtoBuf(&descriptor_pool, "test.canList"),
+        ProtoBuf(descriptor_pool, &format!("test.{}List", original_topic)),
         MessagePack,
         Bson,
         Cbor,
@@ -51,7 +59,7 @@ async fn main() {
         // Avro(&schema),
     ] {
         println!("\n------------\n{}\n------------", algo);
-        let serialized_payload = algo.serialize(&original_payload).unwrap();
+        let serialized_payload = algo.serialize(original_payload.clone()).unwrap();
 
         // println!(
         //     "serialized: {:?}; len: {}\n",

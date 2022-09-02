@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 thiserror = "1"
+rand = "0.8"
+flume = "0.10"
+log = "0.4"
 # Compression
 async-compression = { version = "0.3", features = ["tokio", "zstd", "zlib"] }
 lz4_flex = "0.9.3"

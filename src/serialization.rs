@@ -73,7 +73,7 @@ impl Display for Algo<'_> {
 }
 
 impl<'a> Algo<'a> {
-    pub fn serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
+    pub fn serialize(&self, payload: Vec<Payload>) -> Result<Vec<u8>, Error> {
         let now = Instant::now();
         let serialized = match self {
             // Self::Avro(schema) => self.avro_serialize(payload, schema),
@@ -112,7 +112,7 @@ impl<'a> Algo<'a> {
         deserialized
     }
 
-    // fn avro_serialize(&self, payload: &Vec<Payload>, schema: &Schema) -> Result<Vec<u8>, Error> {
+    // fn avro_serialize(&self, payload: Vec<Payload>, schema: &Schema) -> Result<Vec<u8>, Error> {
     //     let mut serialized = vec![];
     //     let mut writer = Writer::new(schema, &mut serialized);
     //     let value = to_value(payload)?;
@@ -122,7 +122,7 @@ impl<'a> Algo<'a> {
     //     Ok(serialized)
     // }
 
-    fn bson_serialize(&self, payload: &[Payload]) -> Result<Vec<u8>, Error> {
+    fn bson_serialize(&self, payload: Vec<Payload>) -> Result<Vec<u8>, Error> {
         let array = PayloadArray {
             messages: payload.to_owned(),
         };
@@ -131,27 +131,27 @@ impl<'a> Algo<'a> {
         Ok(serialized)
     }
 
-    fn cbor_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
+    fn cbor_serialize(&self, payload: Vec<Payload>) -> Result<Vec<u8>, Error> {
         let mut serialized = vec![];
-        ciborium::ser::into_writer(payload, &mut serialized)?;
+        ciborium::ser::into_writer(&payload, &mut serialized)?;
 
         Ok(serialized)
     }
 
-    fn json_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
-        let serialized = serde_json::to_vec(payload)?;
+    fn json_serialize(&self, payload: Vec<Payload>) -> Result<Vec<u8>, Error> {
+        let serialized = serde_json::to_vec(&payload)?;
 
         Ok(serialized)
     }
 
-    fn msgpck_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
-        let serialized = rmp_serde::to_vec(payload)?;
+    fn msgpck_serialize(&self, payload: Vec<Payload>) -> Result<Vec<u8>, Error> {
+        let serialized = rmp_serde::to_vec(&payload)?;
 
         Ok(serialized)
     }
 
-    fn pickle_serialize(&self, payload: &Vec<Payload>) -> Result<Vec<u8>, Error> {
-        let serialized = serde_pickle::to_vec(payload, SerOptions::new())?;
+    fn pickle_serialize(&self, payload: Vec<Payload>) -> Result<Vec<u8>, Error> {
+        let serialized = serde_pickle::to_vec(&payload, SerOptions::new())?;
 
         Ok(serialized)
     }
@@ -159,7 +159,7 @@ impl<'a> Algo<'a> {
     fn proto_serialize(
         &self,
         descriptor_pool: &DescriptorPool,
-        payload: &Vec<Payload>,
+        payload: Vec<Payload>,
         stream: &str,
     ) -> Result<Vec<u8>, Error> {
         let desc = descriptor_pool.get_message_by_name(stream).unwrap();
@@ -282,14 +282,98 @@ pub fn hard_code_proto() -> DescriptorPool {
         }
         
         message gps {
-            double lon = 1;
-            double lat = 2;
+            double longitude = 1;
+            double latitude = 2;
             uint64 timestamp = 3;
             sint32 sequence = 4;
         }
         
         message gpsList {
             repeated gps messages = 1;
+        }
+
+        message bms {
+            sint32 sequence = 1;
+            uint64 timestamp = 2;
+            int32 periodicity_ms = 3;
+            double mosfet_temperature = 4;
+            double ambient_temperature = 5;
+            int32 mosfet_status = 6;
+            int32 cell_voltage_count = 7;
+            double cell_voltage_1 = 8;
+            double cell_voltage_2 = 9;
+            double cell_voltage_3 = 10;
+            double cell_voltage_4 = 11;
+            double cell_voltage_5 = 12;
+            double cell_voltage_6 = 13;
+            double cell_voltage_7 = 14;
+            double cell_voltage_8 = 15;
+            double cell_voltage_9 = 16;
+            double cell_voltage_10 = 17;
+            double cell_voltage_11 = 18;
+            double cell_voltage_12 = 19;
+            double cell_voltage_13 = 20;
+            double cell_voltage_14 = 21;
+            double cell_voltage_15 = 22;
+            double cell_voltage_16 = 23;
+            int32 cell_thermistor_count = 24;
+            double cell_temp_1 = 25;
+            double cell_temp_2 = 26;
+            double cell_temp_3 = 27;
+            double cell_temp_4 = 28;
+            double cell_temp_5 = 29;
+            double cell_temp_6 = 30;
+            double cell_temp_7 = 31;
+            double cell_temp_8 = 32;
+            int32 cell_balancing_status = 33;
+            double pack_voltage = 34;
+            double pack_current = 35;
+            double pack_soc = 36;
+            double pack_soh = 37;
+            double pack_sop = 38;
+            int64 pack_cycle_count = 39;
+            int64 pack_available_energy = 40;
+            int64 pack_consumed_energy = 41;
+            int32 pack_fault = 42;
+            int32 pack_status = 43;
+        }
+        
+        message bmsList {
+            repeated bms messages = 1;
+        }
+
+        message peripherals {
+            string gps = 1;
+            string gsm = 2;
+            string imu = 3;
+            string left_indicator = 4;
+            string right_indicator = 5;
+            string headlamp = 6;
+            string horn = 7;
+            string left_brake = 8;
+            string right_brake = 9;
+            sint32 sequence = 10;
+            uint64 timestamp = 11;
+        }
+
+        message peripheralsList {
+            repeated peripherals messages = 1;
+        }
+
+        message shadow {
+            string mode = 1;
+            string status = 2;
+            string firmware_version = 3;
+            string config_version = 4;
+            int64 distance_travelled = 5;
+            int64 range = 6;
+            double SOC = 7;
+            sint32 sequence = 8;
+            uint64 timestamp = 9;
+        }
+
+        message shadowList {
+            repeated shadow messages = 1;
         }
         "#
     .to_string();
