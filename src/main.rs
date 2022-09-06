@@ -11,6 +11,8 @@ use log::error;
 use prost_reflect::DescriptorPool;
 use serialization::{hard_code_proto, Algo::*};
 
+const MAX_BUF_SIZE: usize = 1; // 10, 100, 1000
+
 // use crate::serialization::hard_code_avro;
 
 #[tokio::main]

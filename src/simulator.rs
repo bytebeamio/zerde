@@ -9,7 +9,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use std::{cmp::Ordering, fs, io, sync::Arc};
 
 use crate::base::Buffer;
-use crate::{Payload, SimulatorConfig, Stream};
+use crate::{Payload, SimulatorConfig, Stream, MAX_BUF_SIZE};
 
 use rand::Rng;
 
@@ -119,7 +119,7 @@ impl Partitions {
             .or_insert(Stream::new(
                 &payload.stream,
                 &payload.stream,
-                10,
+                MAX_BUF_SIZE,
                 self.tx.clone(),
             ))
             .fill(payload)
