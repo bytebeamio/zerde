@@ -22,7 +22,7 @@ async fn main() {
         if let Err(e) = simulator::start(
             data_tx,
             &SimulatorConfig {
-                num_devices: 10,
+                num_devices: 1,
                 gps_paths: "./paths".to_string(),
             },
         ) {
