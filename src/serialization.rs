@@ -73,40 +73,40 @@ impl Display for Algo<'_> {
 }
 
 impl<'a> Algo<'a> {
-    pub fn serialize(&self, payload: Vec<Payload>) -> Result<Vec<u8>, Error> {
+    pub fn serialize(&self, payload: Vec<Payload>) -> Result<(Vec<u8>, u128), Error> {
         let now = Instant::now();
         let serialized = match self {
             // Self::Avro(schema) => self.avro_serialize(payload, schema),
-            Self::Bson => self.bson_serialize(payload),
-            Self::Cbor => self.cbor_serialize(payload),
-            Self::Json => self.json_serialize(payload),
-            Self::MessagePack => self.msgpck_serialize(payload),
-            Self::Pickle => self.pickle_serialize(payload),
+            Self::Bson => self.bson_serialize(payload)?,
+            Self::Cbor => self.cbor_serialize(payload)?,
+            Self::Json => self.json_serialize(payload)?,
+            Self::MessagePack => self.msgpck_serialize(payload)?,
+            Self::Pickle => self.pickle_serialize(payload)?,
             Self::ProtoBuf(descriptor_pool, stream) => {
-                self.proto_serialize(descriptor_pool, payload, stream)
+                self.proto_serialize(descriptor_pool, payload, stream)?
             }
         };
-        print!("{}, ", now.elapsed().as_micros());
+        let serialization_time = now.elapsed().as_micros();
 
-        serialized
+        Ok((serialized, serialization_time))
     }
 
-    pub fn deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
+    pub fn deserialize(&self, payload: &[u8]) -> Result<(Vec<Payload>, u128), Error> {
         let now = Instant::now();
         let deserialized = match self {
             // Self::Avro(schema) => self.avro_deserialize(payload, schema),
-            Self::Bson => self.bson_deserialize(payload),
-            Self::Cbor => self.cbor_deserialize(payload),
-            Self::Json => self.json_deserialize(payload),
-            Self::MessagePack => self.msgpck_deserialize(payload),
-            Self::Pickle => self.pickle_deserialize(payload),
+            Self::Bson => self.bson_deserialize(payload)?,
+            Self::Cbor => self.cbor_deserialize(payload)?,
+            Self::Json => self.json_deserialize(payload)?,
+            Self::MessagePack => self.msgpck_deserialize(payload)?,
+            Self::Pickle => self.pickle_deserialize(payload)?,
             Self::ProtoBuf(descriptor_pool, stream) => {
-                self.proto_deserialize(descriptor_pool, payload, stream)
+                self.proto_deserialize(descriptor_pool, payload, stream)?
             }
         };
-        print!("{}, ", now.elapsed().as_micros());
+        let deserialization_time = now.elapsed().as_micros();
 
-        deserialized
+        Ok((deserialized, deserialization_time))
     }
 
     // fn avro_serialize(&self, payload: Vec<Payload>, schema: &Schema) -> Result<Vec<u8>, Error> {

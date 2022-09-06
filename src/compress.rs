@@ -26,30 +26,32 @@ pub enum Algo {
 }
 
 impl Algo {
-    pub async fn compress(&self, payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
+    pub async fn compress(&self, payload: &mut Vec<u8>, topic: &mut String) -> Result<u128, Error> {
         let now = Instant::now();
-        let compressed = match self {
-            Self::Lz4 => Self::lz4_compress(payload, topic),
-            Self::Snappy => Self::snappy_compress(payload, topic),
-            Self::Zlib => Self::zlib_compress(payload, topic).await,
-            Self::Zstd => Self::zstd_compress(payload, topic).await,
-        };
-        print!("{}, ", now.elapsed().as_micros());
+        match self {
+            Self::Lz4 => Self::lz4_compress(payload, topic)?,
+            Self::Snappy => Self::snappy_compress(payload, topic)?,
+            Self::Zlib => Self::zlib_compress(payload, topic).await?,
+            Self::Zstd => Self::zstd_compress(payload, topic).await?,
+        }
 
-        compressed
+        Ok(now.elapsed().as_micros())
     }
 
-    pub async fn decompress(&self, payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
+    pub async fn decompress(
+        &self,
+        payload: &mut Vec<u8>,
+        topic: &mut String,
+    ) -> Result<u128, Error> {
         let now = Instant::now();
-        let decompressed = match self {
-            Self::Lz4 => Self::lz4_decompress(payload, topic),
-            Self::Snappy => Self::snappy_decompress(payload, topic),
-            Self::Zlib => Self::zlib_decompress(payload, topic).await,
-            Self::Zstd => Self::zstd_decompress(payload, topic).await,
-        };
-        print!("{}, ", now.elapsed().as_micros());
+        match self {
+            Self::Lz4 => Self::lz4_decompress(payload, topic)?,
+            Self::Snappy => Self::snappy_decompress(payload, topic)?,
+            Self::Zlib => Self::zlib_decompress(payload, topic).await?,
+            Self::Zstd => Self::zstd_decompress(payload, topic).await?,
+        }
 
-        decompressed
+        Ok(now.elapsed().as_micros())
     }
 
     fn lz4_compress(payload: &mut Vec<u8>, topic: &mut String) -> Result<(), Error> {
