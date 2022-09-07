@@ -1,0 +1,1 @@
+Data for batch size 1000 was collected over a timeperiod of 20h33m5s, for batch size 100 over 22m29s, for batch size 10 over 9m16s, for batch size 1 over 6m26s.
