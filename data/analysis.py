@@ -1,4 +1,8 @@
 import csv
+import matplotlib.pyplot as plt
+
+plt.rcdefaults()
+fig, ax = plt.subplots()
 
 def get_details(file_name):
     with open(file_name) as f:
@@ -16,11 +20,18 @@ def get_details(file_name):
     
         return (count, byte_sizes)
 
-print("batch_size, data_type, row_count, json, json_lz4, json_snappy, json_zlib, json_zstd, protobuf, protobuf_lz4, protobuf_snappy, protobuf_zlib, protobuf_zstd, msgpack, msgpack_lz4, msgpack_snappy, msgpack_zlib, msgpack_zstd, bson, bson_lz4, bson_snappy, bson_zlib, bson_zstd, cbor, cbor_lz4, cbor_snappy, cbor_zlib, cbor_zstd, pickle, pickle_lz4, pickle_snappy, pickle_zlib, pickle_zstd")
+headers = ["json", "json_lz4", "json_snappy", "json_zlib", "json_zstd", "protobuf", "protobuf_lz4", "protobuf_snappy", "protobuf_zlib", "protobuf_zstd", "msgpack", "msgpack_lz4", "msgpack_snappy", "msgpack_zlib", "msgpack_zstd", "bson", "bson_lz4", "bson_snappy", "bson_zlib", "bson_zstd", "cbor", "cbor_lz4", "cbor_snappy", "cbor_zlib", "cbor_zstd", "pickle", "pickle_lz4", "pickle_snappy", "pickle_zlib", "pickle_zstd"]
+print("batch_size, data_type, row_count,", ", ".join(headers))
 for batch_size in [1, 10, 100, 1000]:
     for data_type in ["bms", "gps", "imu", "motor", "peripherals", "shadow"]:
-        file_name = "{}_{}.csv".format(batch_size, data_type) 
-        (count, row) = get_details(file_name)
-        row = list(map(str, row))
-        print(batch_size, ", ", data_type,", ", count, ", ", ", ".join(row), sep="")
+        file_name = "{}_{}".format(batch_size, data_type) 
+        (count, row) = get_details(file_name + ".csv")
+        print(batch_size, ", ", data_type,", ", count, ", ", ", ".join(list(map(str, row))), sep="")
+        ax.barh(range(30), row, align='center')
+        ax.set_yticks(range(30), labels=headers)
+        ax.invert_yaxis()
+        ax.set_xlabel('Bytes')
+        ax.set_title('Byte size from serialization and compression')
+        plt.savefig(file_name + ".png")
+
 
