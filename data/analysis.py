@@ -26,13 +26,13 @@ with open("analysis_sizes.csv", "w") as f:
     line = "batch_size, data_type, row_count, " + ", ".join(headers) + "\n"
     f.write(line)
     for batch_size in [1, 10, 100, 1000]:
-        for data_type in ["bms", "gps", "imu", "motor", "peripherals", "shadow"]:
+        for data_type in ["bms", "gps", "imu", "motor"]:
             file_name = "{}_{}".format(batch_size, data_type) 
             (count, row) = get_details(file_name + ".csv", idx)
             line = f"{batch_size}, {data_type}, {count}, " + ", ".join(list(map(str, row))) + "\n"
             f.write(line)
-            ax.barh(range(30), row, align='center')
-            ax.set_yticks(range(30), labels=headers)
+            ax.barh(range(35), row, align='center')
+            ax.set_yticks(range(35), labels=headers)
             ax.invert_yaxis()
             ax.set_xlabel('Bytes')
             ax.set_title('Byte size from serialization and compression')
@@ -45,13 +45,13 @@ with open("analysis_times.csv", "w") as f:
     line = "batch_size, data_type, row_count, " + ", ".join(headers) + "\n"
     f.write(line)
     for batch_size in [1, 10, 100, 1000]:
-        for data_type in ["bms", "gps", "imu", "motor", "peripherals", "shadow"]:
+        for data_type in ["bms", "gps", "imu", "motor"]:
             file_name = "{}_{}".format(batch_size, data_type) 
             (count, row) = get_details(file_name + ".csv", idx)
             line = f"{batch_size}, {data_type}, {count}, " + ", ".join(list(map(str, row))) + "\n"
             f.write(line)
-            ax.barh(range(60), row, align='center')
-            ax.set_yticks(range(60), labels=headers)
+            ax.barh(range(70), row, align='center')
+            ax.set_yticks(range(70), labels=headers)
             ax.invert_yaxis()
             ax.set_xlabel('Micros')
             ax.set_title('Time from serialization and compression')
