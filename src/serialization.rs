@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Deserializer, Serializer};
 use serde_pickle::{DeOptions, SerOptions};
 
+mod proto;
+
 use crate::Payload;
 
 #[derive(Debug, thiserror::Error)]
@@ -51,22 +53,19 @@ struct PayloadArray {
 
 #[derive(Debug, Clone)]
 pub enum Algo<'a> {
-    // Avro(&'a Schema),
     Bson,
     Cbor,
     Json,
-    // Marshal,
     MessagePack,
     Pickle,
-    ProtoBuf(&'a DescriptorPool, &'a str),
-    // Thrift,
-    // Ujson,
+    Proto(&'a str),
+    ProtoReflect(&'a DescriptorPool, &'a str),
 }
 
 impl Display for Algo<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ProtoBuf(_, s) => f.write_fmt(format_args!("ProtoBuf: {}", s)),
+            Self::ProtoReflect(_, s) => f.write_fmt(format_args!("ProtoBuf: {}", s)),
             a => f.write_fmt(format_args!("{:?}", a)),
         }
     }
@@ -82,8 +81,9 @@ impl<'a> Algo<'a> {
             Self::Json => self.json_serialize(payload)?,
             Self::MessagePack => self.msgpck_serialize(payload)?,
             Self::Pickle => self.pickle_serialize(payload)?,
-            Self::ProtoBuf(descriptor_pool, stream) => {
-                self.proto_serialize(descriptor_pool, payload, stream)?
+            Self::Proto(stream) => self.proto_serialize(payload, stream)?,
+            Self::ProtoReflect(descriptor_pool, stream) => {
+                self.proto_reflect_serialize(descriptor_pool, payload, stream)?
             }
         };
         let serialization_time = now.elapsed().as_micros();
@@ -100,8 +100,9 @@ impl<'a> Algo<'a> {
             Self::Json => self.json_deserialize(payload)?,
             Self::MessagePack => self.msgpck_deserialize(payload)?,
             Self::Pickle => self.pickle_deserialize(payload)?,
-            Self::ProtoBuf(descriptor_pool, stream) => {
-                self.proto_deserialize(descriptor_pool, payload, stream)?
+            Self::Proto(stream) => self.proto_deserialize(payload, stream)?,
+            Self::ProtoReflect(descriptor_pool, stream) => {
+                self.proto_reflect_deserialize(descriptor_pool, payload, stream)?
             }
         };
         let deserialization_time = now.elapsed().as_micros();
@@ -153,7 +154,11 @@ impl<'a> Algo<'a> {
         Ok(serialized)
     }
 
-    fn proto_serialize(
+    fn proto_serialize(&self, payload: Vec<Payload>, stream: &str) -> Result<Vec<u8>, Error> {
+        proto::serialize(payload, stream)
+    }
+
+    fn proto_reflect_serialize(
         &self,
         descriptor_pool: &DescriptorPool,
         payload: Vec<Payload>,
@@ -212,7 +217,11 @@ impl<'a> Algo<'a> {
         Ok(deserialized)
     }
 
-    fn proto_deserialize(
+    fn proto_deserialize(&self, payload: &[u8], stream: &str) -> Result<Vec<Payload>, Error> {
+        proto::deserialize(payload, stream)
+    }
+
+    fn proto_reflect_deserialize(
         &self,
         descriptor_pool: &DescriptorPool,
         payload: &[u8],

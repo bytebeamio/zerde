@@ -23,3 +23,7 @@ serde_json = "1.0"
 serde-pickle = "1.1"
 prost-reflect = { version = "0.8", features = ["serde"] }
 prost-reflect-build = "0.8"
+prost = "0.10"
+
+[build-dependencies]
+prost-build = "0.10"

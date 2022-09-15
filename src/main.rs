@@ -59,9 +59,11 @@ async fn serz(
     original_payload: Vec<Payload>,
 ) -> String {
     let mut line = "\n".to_string();
+    let stream = format!("test.{}List", original_topic);
     for algo in [
         Json,
-        ProtoBuf(descriptor_pool, &format!("test.{}List", original_topic)),
+        ProtoReflect(descriptor_pool, &stream),
+        Proto(&stream),
         MessagePack,
         Bson,
         Cbor,

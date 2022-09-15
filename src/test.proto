@@ -1,0 +1,140 @@
+syntax = "proto3";
+package test;
+
+message imu {
+    uint64 timestamp  = 1;
+    uint32 sequence = 2;
+    double ax = 3;
+    double ay = 4;
+    double az = 5;
+    double pitch = 6;
+    double roll = 7;
+    double yaw = 8;
+    double magx = 9;
+    double magy = 10;
+    double magz = 11;
+}
+
+message imuList {
+    repeated imu messages = 1;
+}
+
+message motor {
+    uint64 timestamp  = 1;
+    uint32 sequence = 2;
+    double temperature1 = 3;
+    double temperature2 = 4;
+    double temperature3 = 5;
+    double voltage = 6;
+    double current = 7;
+    uint32 rpm = 8;
+}
+
+message motorList {
+    repeated motor messages = 1;
+}
+
+message can {
+    uint64 timestamp = 1;
+    sint32 sequence = 2;
+    uint64 data = 3;
+}
+
+message canList {
+    repeated can messages = 1;
+}
+
+message gps {
+    double longitude = 1;
+    double latitude = 2;
+    uint64 timestamp = 3;
+    sint32 sequence = 4;
+}
+
+message gpsList {
+    repeated gps messages = 1;
+}
+
+message bms {
+    sint32 sequence = 1;
+    uint64 timestamp = 2;
+    int32 periodicity_ms = 3;
+    double mosfet_temperature = 4;
+    double ambient_temperature = 5;
+    int32 mosfet_status = 6;
+    int32 cell_voltage_count = 7;
+    double cell_voltage_1 = 8;
+    double cell_voltage_2 = 9;
+    double cell_voltage_3 = 10;
+    double cell_voltage_4 = 11;
+    double cell_voltage_5 = 12;
+    double cell_voltage_6 = 13;
+    double cell_voltage_7 = 14;
+    double cell_voltage_8 = 15;
+    double cell_voltage_9 = 16;
+    double cell_voltage_10 = 17;
+    double cell_voltage_11 = 18;
+    double cell_voltage_12 = 19;
+    double cell_voltage_13 = 20;
+    double cell_voltage_14 = 21;
+    double cell_voltage_15 = 22;
+    double cell_voltage_16 = 23;
+    int32 cell_thermistor_count = 24;
+    double cell_temp_1 = 25;
+    double cell_temp_2 = 26;
+    double cell_temp_3 = 27;
+    double cell_temp_4 = 28;
+    double cell_temp_5 = 29;
+    double cell_temp_6 = 30;
+    double cell_temp_7 = 31;
+    double cell_temp_8 = 32;
+    int32 cell_balancing_status = 33;
+    double pack_voltage = 34;
+    double pack_current = 35;
+    double pack_soc = 36;
+    double pack_soh = 37;
+    double pack_sop = 38;
+    int64 pack_cycle_count = 39;
+    int64 pack_available_energy = 40;
+    int64 pack_consumed_energy = 41;
+    int32 pack_fault = 42;
+    int32 pack_status = 43;
+}
+
+message bmsList {
+    repeated bms messages = 1;
+}
+
+message peripherals {
+    string gps = 1;
+    string gsm = 2;
+    string imu = 3;
+    string left_indicator = 4;
+    string right_indicator = 5;
+    string headlamp = 6;
+    string horn = 7;
+    string left_brake = 8;
+    string right_brake = 9;
+    sint32 sequence = 10;
+    uint64 timestamp = 11;
+}
+
+message peripheralsList {
+    repeated peripherals messages = 1;
+}
+
+message shadow {
+    string mode = 1;
+    string status = 2;
+    string firmware_version = 3;
+    string config_version = 4;
+    int64 distance_travelled = 5;
+    int64 range = 6;
+    double SOC = 7;
+    sint32 sequence = 8;
+    uint64 timestamp = 9;
+}
+
+message shadowList {
+    repeated shadow messages = 1;
+}

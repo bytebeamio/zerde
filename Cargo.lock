@@ -1285,6 +1285,8 @@ dependencies = [
  "flume",
  "log",
  "lz4_flex",
+ "prost",
+ "prost-build",
  "prost-reflect",
  "prost-reflect-build",
  "rand",
