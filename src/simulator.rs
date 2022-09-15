@@ -41,8 +41,8 @@ pub struct DeviceData {
 pub enum DataEventType {
     GenerateGPS,
     GenerateIMU,
-    GenerateVehicleData,
-    GeneratePeripheralData,
+    // GenerateVehicleData,
+    // GeneratePeripheralData,
     GenerateMotor,
     GenerateBMS,
 }
@@ -158,13 +158,13 @@ pub fn generate_int(start: i32, end: i32) -> i64 {
     rand::thread_rng().gen_range(start..end) as i64
 }
 
-pub fn generate_bool_string(p: f64) -> String {
-    if rand::thread_rng().gen_bool(p) {
-        "on".to_owned()
-    } else {
-        "off".to_owned()
-    }
-}
+// pub fn generate_bool_string(p: f64) -> String {
+//     if rand::thread_rng().gen_bool(p) {
+//         "on".to_owned()
+//     } else {
+//         "off".to_owned()
+//     }
+// }
 
 #[derive(Debug, Serialize)]
 struct Bms {
@@ -338,78 +338,78 @@ pub fn generate_motor_data(sequence: u32) -> Payload {
     };
 }
 
-#[derive(Debug, Serialize)]
-struct Peripheral {
-    gps: String,
-    gsm: String,
-    imu: String,
-    left_indicator: String,
-    right_indicator: String,
-    headlamp: String,
-    horn: String,
-    left_brake: String,
-    right_brake: String,
-}
+// #[derive(Debug, Serialize)]
+// struct Peripheral {
+//     gps: String,
+//     gsm: String,
+//     imu: String,
+//     left_indicator: String,
+//     right_indicator: String,
+//     headlamp: String,
+//     horn: String,
+//     left_brake: String,
+//     right_brake: String,
+// }
 
-pub fn generate_peripheral_state_data(sequence: u32) -> Payload {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64;
-    let payload = Peripheral {
-        gps: generate_bool_string(0.99),
-        gsm: generate_bool_string(0.99),
-        imu: generate_bool_string(0.99),
-        left_indicator: generate_bool_string(0.1),
-        right_indicator: generate_bool_string(0.1),
-        headlamp: generate_bool_string(0.9),
-        horn: generate_bool_string(0.05),
-        left_brake: generate_bool_string(0.1),
-        right_brake: generate_bool_string(0.1),
-    };
+// pub fn generate_peripheral_state_data(sequence: u32) -> Payload {
+//     let timestamp = SystemTime::now()
+//         .duration_since(UNIX_EPOCH)
+//         .unwrap()
+//         .as_millis() as u64;
+//     let payload = Peripheral {
+//         gps: generate_bool_string(0.99),
+//         gsm: generate_bool_string(0.99),
+//         imu: generate_bool_string(0.99),
+//         left_indicator: generate_bool_string(0.1),
+//         right_indicator: generate_bool_string(0.1),
+//         headlamp: generate_bool_string(0.9),
+//         horn: generate_bool_string(0.05),
+//         left_brake: generate_bool_string(0.1),
+//         right_brake: generate_bool_string(0.1),
+//     };
 
-    return Payload {
-        timestamp,
-        sequence,
-        stream: "peripherals".to_string(),
-        payload: json!(payload),
-    };
-}
+//     return Payload {
+//         timestamp,
+//         sequence,
+//         stream: "peripherals".to_string(),
+//         payload: json!(payload),
+//     };
+// }
 
-#[derive(Debug, Serialize)]
-struct DeviceShadow {
-    mode: String,
-    status: String,
-    firmware_version: String,
-    config_version: String,
-    distance_travelled: i64,
-    range: i64,
-    #[serde(rename(serialize = "SOC"))]
-    soc: f64,
-}
+// #[derive(Debug, Serialize)]
+// struct DeviceShadow {
+//     mode: String,
+//     status: String,
+//     firmware_version: String,
+//     config_version: String,
+//     distance_travelled: i64,
+//     range: i64,
+//     #[serde(rename(serialize = "SOC"))]
+//     soc: f64,
+// }
 
-pub fn generate_device_shadow_data(sequence: u32) -> Payload {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64;
-    let payload = DeviceShadow {
-        mode: "economy".to_owned(),
-        status: "Locked".to_owned(),
-        firmware_version: "1.33-Aug-2020b1".to_owned(),
-        config_version: "1.23".to_owned(),
-        distance_travelled: generate_int(20000, 30000),
-        range: generate_int(50000, 60000),
-        soc: generate_float(50f64, 90f64),
-    };
+// pub fn generate_device_shadow_data(sequence: u32) -> Payload {
+//     let timestamp = SystemTime::now()
+//         .duration_since(UNIX_EPOCH)
+//         .unwrap()
+//         .as_millis() as u64;
+//     let payload = DeviceShadow {
+//         mode: "economy".to_owned(),
+//         status: "Locked".to_owned(),
+//         firmware_version: "1.33-Aug-2020b1".to_owned(),
+//         config_version: "1.23".to_owned(),
+//         distance_travelled: generate_int(20000, 30000),
+//         range: generate_int(50000, 60000),
+//         soc: generate_float(50f64, 90f64),
+//     };
 
-    return Payload {
-        timestamp,
-        sequence,
-        stream: "shadow".to_string(),
-        payload: json!(payload),
-    };
-}
+//     return Payload {
+//         timestamp,
+//         sequence,
+//         stream: "shadow".to_string(),
+//         payload: json!(payload),
+//     };
+// }
 
 pub fn read_gps_paths(paths_dir: &str) -> Vec<Arc<Vec<Location>>> {
     (0..10)
@@ -455,19 +455,19 @@ pub fn generate_initial_events(
             sequence: 1,
         }));
 
-        events.push(Event::DataEvent(DataEvent {
-            event_type: DataEventType::GenerateVehicleData,
-            device: device.clone(),
-            timestamp,
-            sequence: 1,
-        }));
+        // events.push(Event::DataEvent(DataEvent {
+        //     event_type: DataEventType::GenerateVehicleData,
+        //     device: device.clone(),
+        //     timestamp,
+        //     sequence: 1,
+        // }));
 
-        events.push(Event::DataEvent(DataEvent {
-            event_type: DataEventType::GeneratePeripheralData,
-            device: device.clone(),
-            timestamp,
-            sequence: 1,
-        }));
+        // events.push(Event::DataEvent(DataEvent {
+        //     event_type: DataEventType::GeneratePeripheralData,
+        //     device: device.clone(),
+        //     timestamp,
+        //     sequence: 1,
+        // }));
 
         events.push(Event::DataEvent(DataEvent {
             event_type: DataEventType::GenerateMotor,
@@ -496,8 +496,8 @@ pub fn next_event_duration(event_type: DataEventType) -> Duration {
     match event_type {
         DataEventType::GenerateGPS => Duration::from_millis(1000),
         DataEventType::GenerateIMU => Duration::from_millis(100),
-        DataEventType::GenerateVehicleData => Duration::from_millis(1000),
-        DataEventType::GeneratePeripheralData => Duration::from_millis(1000),
+        // DataEventType::GenerateVehicleData => Duration::from_millis(1000),
+        // DataEventType::GeneratePeripheralData => Duration::from_millis(1000),
         DataEventType::GenerateMotor => Duration::from_millis(250),
         DataEventType::GenerateBMS => Duration::from_millis(250),
     }
@@ -511,8 +511,8 @@ pub async fn process_data_event(
     let data = match event.event_type {
         DataEventType::GenerateGPS => generate_gps_data(&event.device, event.sequence),
         DataEventType::GenerateIMU => generate_imu_data(event.sequence),
-        DataEventType::GenerateVehicleData => generate_device_shadow_data(event.sequence),
-        DataEventType::GeneratePeripheralData => generate_peripheral_state_data(event.sequence),
+        // DataEventType::GenerateVehicleData => generate_device_shadow_data(event.sequence),
+        // DataEventType::GeneratePeripheralData => generate_peripheral_state_data(event.sequence),
         DataEventType::GenerateMotor => generate_motor_data(event.sequence),
         DataEventType::GenerateBMS => generate_bms_data(event.sequence),
     };
