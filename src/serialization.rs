@@ -1,8 +1,6 @@
-use std::{
-    fmt::Display,
-    io::{Read, Write},
-    time::Instant,
-};
+use std::fmt::Display;
+use std::io::{Read, Write};
+use std::time::Instant;
 
 // use apache_avro::{from_value, to_value, Reader, Schema, Writer};
 use prost_reflect::{prost::Message, DescriptorPool, DynamicMessage, SerializeOptions};

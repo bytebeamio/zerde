@@ -19,7 +19,7 @@ pub fn serialize(payload: Vec<Payload>, stream: &str) -> Result<Vec<u8>, Error> 
                 .iter()
                 .map(|p| Gps {
                     longitude: p.payload.get("longitude").unwrap().as_f64().unwrap(),
-                    latitude: p.payload.get("longitude").unwrap().as_f64().unwrap(),
+                    latitude: p.payload.get("latitude").unwrap().as_f64().unwrap(),
                     timestamp: p.timestamp,
                     sequence: p.sequence as i32,
                 })
