@@ -136,6 +136,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec8a7b6a70fde80372154c65702f00a0f56f3e1c36abbc6c440484be248856db"
 
 [[package]]
+name = "capnp"
+version = "0.14.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1b5dbbbfbae370eb9e9e86fb86b572acf4d5e0072e44636758cae3fe6ba6015"
+
+[[package]]
+name = "capnpc"
+version = "0.14.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bdc9f1dc84666d4ff007b1a16c8f97db80764a624625979be05d869bcff43aaa"
+dependencies = [
+ "capnp",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1281,6 +1296,8 @@ dependencies = [
  "apache-avro",
  "async-compression",
  "bson",
+ "capnp",
+ "capnpc",
  "ciborium",
  "flume",
  "log",

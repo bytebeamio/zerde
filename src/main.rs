@@ -6,6 +6,10 @@ mod compress;
 mod serialization;
 mod simulator;
 
+mod test_capnp {
+    include!(concat!(env!("OUT_DIR"), "/src/test_capnp.rs"));
+}
+
 use base::{Payload, SimulatorConfig, Stream};
 use compress::Algo::*;
 use flume::bounded;
@@ -68,6 +72,7 @@ async fn serz(
         Bson,
         Cbor,
         Pickle,
+        Capn(&stream),
         // Avro(&schema),
     ] {
         let (serialized_payload, serialization_time) =

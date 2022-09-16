@@ -6,7 +6,7 @@ use self::test::{Bms, BmsList, Gps, GpsList, Imu, ImuList, Motor, MotorList};
 
 use super::Error;
 
-pub mod test {
+mod test {
     include!(concat!(env!("OUT_DIR"), "/test.rs"));
 }
 

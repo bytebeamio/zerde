@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Deserializer, Serializer};
 use serde_pickle::{DeOptions, SerOptions};
 
+mod capnproto;
 mod proto;
 
 use crate::Payload;
@@ -32,6 +33,8 @@ pub enum Error {
     CiboriumDe(#[from] ciborium::de::Error<std::io::Error>),
     #[error("Json error: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("Capn error: {0}")]
+    Capn(#[from] capnp::Error),
     #[error("Pickle error: {0}")]
     Pickle(#[from] serde_pickle::Error),
     #[error("RMP Encode error: {0}")]
@@ -60,6 +63,7 @@ pub enum Algo<'a> {
     Pickle,
     Proto(&'a str),
     ProtoReflect(&'a DescriptorPool, &'a str),
+    Capn(&'a str),
 }
 
 impl Display for Algo<'_> {
@@ -77,6 +81,7 @@ impl<'a> Algo<'a> {
         let serialized = match self {
             // Self::Avro(schema) => self.avro_serialize(payload, schema),
             Self::Bson => self.bson_serialize(payload)?,
+            Self::Capn(stream) => capnproto::serialize(payload, stream)?,
             Self::Cbor => self.cbor_serialize(payload)?,
             Self::Json => self.json_serialize(payload)?,
             Self::MessagePack => self.msgpck_serialize(payload)?,
@@ -96,6 +101,7 @@ impl<'a> Algo<'a> {
         let deserialized = match self {
             // Self::Avro(schema) => self.avro_deserialize(payload, schema),
             Self::Bson => self.bson_deserialize(payload)?,
+            Self::Capn(stream) => capnproto::deserialize(payload, stream)?,
             Self::Cbor => self.cbor_deserialize(payload)?,
             Self::Json => self.json_deserialize(payload)?,
             Self::MessagePack => self.msgpck_deserialize(payload)?,
