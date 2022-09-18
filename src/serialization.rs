@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::io::{Read, Write};
 use std::time::Instant;
 
+use flexbuffers::{FlexbufferSerializer, Reader};
 // use apache_avro::{from_value, to_value, Reader, Schema, Writer};
 use prost_reflect::{prost::Message, DescriptorPool, DynamicMessage, SerializeOptions};
 use serde::{Deserialize, Serialize};
@@ -33,6 +34,12 @@ pub enum Error {
     Json(#[from] serde_json::Error),
     #[error("Capn error: {0}")]
     Capn(#[from] capnp::Error),
+    #[error("Flexbuffers serialization error {0}")]
+    FBSer(#[from] flexbuffers::SerializationError),
+    #[error("Flexbuffers deserialization error {0}")]
+    FBDe(#[from] flexbuffers::DeserializationError),
+    #[error("Flexbuffers reader error: {0}")]
+    FBReader(#[from] flexbuffers::ReaderError),
     #[error("Pickle error: {0}")]
     Pickle(#[from] serde_pickle::Error),
     #[error("RMP Encode error: {0}")]
@@ -55,13 +62,14 @@ struct PayloadArray {
 #[derive(Debug, Clone)]
 pub enum Algo<'a> {
     Bson,
+    Capn(&'a str),
     Cbor,
+    FlexBuffers,
     Json,
     MessagePack,
     Pickle,
     Proto(&'a str),
     ProtoReflect(&'a DescriptorPool, &'a str),
-    Capn(&'a str),
 }
 
 impl Display for Algo<'_> {
@@ -81,6 +89,7 @@ impl<'a> Algo<'a> {
             Self::Bson => self.bson_serialize(payload)?,
             Self::Capn(stream) => capnproto::serialize(payload, stream)?,
             Self::Cbor => self.cbor_serialize(payload)?,
+            Self::FlexBuffers => self.flexbuffers_serialize(payload)?,
             Self::Json => self.json_serialize(payload)?,
             Self::MessagePack => self.msgpck_serialize(payload)?,
             Self::Pickle => self.pickle_serialize(payload)?,
@@ -101,6 +110,7 @@ impl<'a> Algo<'a> {
             Self::Bson => self.bson_deserialize(payload)?,
             Self::Capn(stream) => capnproto::deserialize(payload, stream)?,
             Self::Cbor => self.cbor_deserialize(payload)?,
+            Self::FlexBuffers => self.flexbuffers_deserialize(payload)?,
             Self::Json => self.json_deserialize(payload)?,
             Self::MessagePack => self.msgpck_deserialize(payload)?,
             Self::Pickle => self.pickle_deserialize(payload)?,
@@ -138,6 +148,13 @@ impl<'a> Algo<'a> {
         ciborium::ser::into_writer(&payload, &mut serialized)?;
 
         Ok(serialized)
+    }
+
+    fn flexbuffers_serialize(&self, payload: Vec<Payload>) -> Result<Vec<u8>, Error> {
+        let mut serialized = FlexbufferSerializer::new();
+        payload.serialize(&mut serialized)?;
+
+        Ok(serialized.view().to_vec())
     }
 
     fn json_serialize(&self, payload: Vec<Payload>) -> Result<Vec<u8>, Error> {
@@ -199,6 +216,13 @@ impl<'a> Algo<'a> {
 
     fn cbor_deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
         let deserialized = ciborium::de::from_reader(payload)?;
+
+        Ok(deserialized)
+    }
+
+    fn flexbuffers_deserialize(&self, payload: &[u8]) -> Result<Vec<Payload>, Error> {
+        let root = Reader::get_root(payload)?;
+        let deserialized = Deserialize::deserialize(root)?;
 
         Ok(deserialized)
     }

@@ -25,6 +25,7 @@ prost-reflect = { version = "0.8", features = ["serde"] }
 prost-reflect-build = "0.8"
 prost = "0.10"
 capnp = "0.14"
+flexbuffers = "2.0"
 
 [build-dependencies]
 prost-build = "0.10"
