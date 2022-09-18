@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 plt.rcdefaults()
 fig, ax = plt.subplots()
 
+BATCH_SIZES = [1]#, 10, 100, 1000]
+DATA_TYPES = ["bms", "gps", "imu", "motor"]
+
 def get_details(file_name, idx):
     with open(file_name) as f:
         csvreader = csv.reader(f)
@@ -25,14 +28,14 @@ with open("analysis_sizes.csv", "w") as f:
     headers = ["json", "json_lz4", "json_snappy", "json_zlib", "json_zstd", "protobuf", "protobuf_lz4", "protobuf_snappy", "protobuf_zlib", "protobuf_zstd", "protoref", "protoref_lz4", "protoref_snappy", "protoref_zlib", "protoref_zstd", "msgpack", "msgpack_lz4", "msgpack_snappy", "msgpack_zlib", "msgpack_zstd", "bson", "bson_lz4", "bson_snappy", "bson_zlib", "bson_zstd", "cbor", "cbor_lz4", "cbor_snappy", "cbor_zlib", "cbor_zstd", "pickle", "pickle_lz4", "pickle_snappy", "pickle_zlib", "pickle_zstd", "capnproto", "capnproto_lz4", "capnproto_snappy", "capnproto_zlib", "capnproto_zstd", "flexbuffers", "flexbuffers_lz4", "flexbuffers_snappy", "flexbuffers_zlib", "flexbuffers_zstd",]
     line = "batch_size, data_type, row_count, " + ", ".join(headers) + "\n"
     f.write(line)
-    for batch_size in [1, 10, 100, 1000]:
-        for data_type in ["bms", "gps", "imu", "motor"]:
+    for batch_size in BATCH_SIZES:
+        for data_type in DATA_TYPES:
             file_name = "{}_{}".format(batch_size, data_type) 
             (count, row) = get_details(file_name + ".csv", idx)
             line = f"{batch_size}, {data_type}, {count}, " + ", ".join(list(map(str, row))) + "\n"
             f.write(line)
-            ax.barh(range(40), row, align='center')
-            ax.set_yticks(range(40), labels=headers)
+            ax.barh(range(len(headers)), row, align='center')
+            ax.set_yticks(range(len(headers)), labels=headers)
             ax.invert_yaxis()
             ax.set_xlabel('Bytes')
             ax.set_title('Byte size from serialization and compression')
@@ -44,14 +47,14 @@ with open("analysis_times.csv", "w") as f:
     headers = ["json_ser", "json_lz4#", "json_lz4!", "json_snappy#", "json_snappy!", "json_zlib#", "json_zlib!", "json_zstd#", "json_zstd!", "json_de", "protobuf_ser", "protobuf_lz4#", "protobuf_lz4!", "protobuf_snappy#", "protobuf_snappy!", "protobuf_zlib#", "protobuf_zlib!", "protobuf_zstd#", "protobuf_zstd!", "protobuf_de", "protoref_ser", "protoref_lz4#", "protoref_lz4!", "protoref_snappy#", "protoref_snappy!", "protoref_zlib#", "protoref_zlib!", "protoref_zstd#", "protoref_zstd!", "protoref_de", "msgpack_ser", "msgpack_lz4#", "msgpack_lz4!", "msgpack_snappy#", "msgpack_snappy!", "msgpack_zlib#", "msgpack_zlib!", "msgpack_zstd#", "msgpack_zstd!", "msgpack_de", "bson_ser", "bson_lz4#", "bson_lz4!", "bson_snappy#", "bson_snappy!", "bson_zlib#", "bson_zlib!", "bson_zstd#", "bson_zstd!", "bson_de", "cbor_ser", "cbor_lz4#", "cbor_lz4!", "cbor_snappy#", "cbor_snappy!", "cbor_zlib#", "cbor_zlib!", "cbor_zstd#", "cbor_zstd!", "cbor_de", "pickle_ser", "pickle_lz4#", "pickle_lz4!", "pickle_snappy#", "pickle_snappy!", "pickle_zlib#", "pickle_zlib!", "pickle_zstd#", "pickle_zstd!", "pickle_de", "capnproto_ser", "capnproto_lz4#", "capnproto_lz4!", "capnproto_snappy#", "capnproto_snappy!", "capnproto_zlib#", "capnproto_zlib!", "capnproto_zstd#", "capnproto_zstd!", "capnproto_de", "flexbuffers_ser", "flexbuffers_lz4#", "flexbuffers_lz4!", "flexbuffers_snappy#", "flexbuffers_snappy!", "flexbuffers_zlib#", "flexbuffers_zlib!", "flexbuffers_zstd#", "flexbuffers_zstd!", "flexbuffers_de",]
     line = "batch_size, data_type, row_count, " + ", ".join(headers) + "\n"
     f.write(line)
-    for batch_size in [1, 10, 100, 1000]:
-        for data_type in ["bms", "gps", "imu", "motor"]:
+    for batch_size in BATCH_SIZES:
+        for data_type in DATA_TYPES:
             file_name = "{}_{}".format(batch_size, data_type) 
             (count, row) = get_details(file_name + ".csv", idx)
             line = f"{batch_size}, {data_type}, {count}, " + ", ".join(list(map(str, row))) + "\n"
             f.write(line)
-            ax.barh(range(80), row, align='center')
-            ax.set_yticks(range(80), labels=headers)
+            ax.barh(range(len(headers)), row, align='center')
+            ax.set_yticks(range(len(headers)), labels=headers)
             ax.invert_yaxis()
             ax.set_xlabel('Micros')
             ax.set_title('Time from serialization and compression')
