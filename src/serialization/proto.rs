@@ -2,7 +2,7 @@ use prost::Message;
 
 use crate::base::Payload;
 
-use self::test::{Bms, BmsList, Gps, GpsList, Imu, ImuList, Motor, MotorList};
+use self::test::{Bms, BmsList, Gps, GpsList, Imu, ImuList, Peripherals, PeripheralsList};
 
 use super::Error;
 
@@ -47,21 +47,54 @@ pub fn serialize(payload: Vec<Payload>, stream: &str) -> Result<Vec<u8>, Error> 
             let list = ImuList { messages };
             list.encode(&mut buf)?;
         }
-        "test.motorList" => {
-            let messages: Vec<Motor> = payload
+        "test.peripheralsList" => {
+            let messages: Vec<Peripherals> = payload
                 .iter()
-                .map(|p| Motor {
+                .map(|p| Peripherals {
                     timestamp: p.timestamp,
-                    sequence: p.sequence,
-                    temperature1: p.payload.get("temperature1").unwrap().as_f64().unwrap(),
-                    temperature2: p.payload.get("temperature2").unwrap().as_f64().unwrap(),
-                    temperature3: p.payload.get("temperature3").unwrap().as_f64().unwrap(),
-                    voltage: p.payload.get("voltage").unwrap().as_f64().unwrap(),
-                    current: p.payload.get("current").unwrap().as_f64().unwrap(),
-                    rpm: p.payload.get("rpm").unwrap().as_u64().unwrap() as u32,
+                    sequence: p.sequence as i32,
+                    gps: p.payload.get("gps").unwrap().as_str().unwrap().to_string(),
+                    gsm: p.payload.get("gsm").unwrap().as_str().unwrap().to_string(),
+                    imu: p.payload.get("imu").unwrap().as_str().unwrap().to_string(),
+                    left_indicator: p
+                        .payload
+                        .get("left_indicator")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    right_indicator: p
+                        .payload
+                        .get("right_indicator")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    left_brake: p
+                        .payload
+                        .get("left_brake")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    right_brake: p
+                        .payload
+                        .get("right_brake")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    headlamp: p
+                        .payload
+                        .get("headlamp")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    horn: p.payload.get("horn").unwrap().as_str().unwrap().to_string(),
                 })
                 .collect();
-            let list = MotorList { messages };
+            let list = PeripheralsList { messages };
             list.encode(&mut buf)?;
         }
         "test.bmsList" => {
@@ -190,15 +223,15 @@ pub fn deserialize(payload: &[u8], stream: &str) -> Result<Vec<Payload>, Error> 
             .collect();
             Ok(payload)
         }
-        "test.motorList" => {
-            let list: MotorList = Message::decode(payload)?;
+        "test.peripheralsList" => {
+            let list: PeripheralsList = Message::decode(payload)?;
             let payload = list
             .messages
             .iter()
-            .map(|m| Payload {
-                sequence: m.sequence as u32,
-                timestamp: m.timestamp,
-                payload: serde_json::json! ({ "temperature1": m.temperature1, "temperature2": m.temperature2, "temperature3": m.temperature3, "rpm": m.rpm, "voltage": m.voltage, "current": m.current }),
+            .map(|p| Payload {
+                sequence: p.sequence as u32,
+                timestamp: p.timestamp,
+                payload: serde_json::json! ({ "gps": p.gps, "gsm": p.gsm, "imu": p.imu, "right_indicator": p.right_indicator, "left_indicator": p.left_indicator, "right_brake": p.right_brake, "left_brake": p.left_brake, "headlamp": p.headlamp, "horn": p.horn }),
                 ..Default::default()
             })
             .collect();

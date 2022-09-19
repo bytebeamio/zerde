@@ -42,8 +42,8 @@ pub enum DataEventType {
     GenerateGPS,
     GenerateIMU,
     // GenerateVehicleData,
-    // GeneratePeripheralData,
-    GenerateMotor,
+    GeneratePeripheralData,
+    // GenerateMotor,
     GenerateBMS,
 }
 
@@ -158,13 +158,13 @@ pub fn generate_int(start: i32, end: i32) -> i64 {
     rand::thread_rng().gen_range(start..end) as i64
 }
 
-// pub fn generate_bool_string(p: f64) -> String {
-//     if rand::thread_rng().gen_bool(p) {
-//         "on".to_owned()
-//     } else {
-//         "off".to_owned()
-//     }
-// }
+pub fn generate_bool_string(p: f64) -> String {
+    if rand::thread_rng().gen_bool(p) {
+        "on".to_owned()
+    } else {
+        "off".to_owned()
+    }
+}
 
 #[derive(Debug, Serialize)]
 struct Bms {
@@ -306,75 +306,75 @@ pub fn generate_imu_data(sequence: u32) -> Payload {
     };
 }
 
-#[derive(Debug, Serialize)]
-struct Motor {
-    temperature1: f64,
-    temperature2: f64,
-    temperature3: f64,
-    voltage: f64,
-    current: f64,
-    rpm: i64,
-}
-
-pub fn generate_motor_data(sequence: u32) -> Payload {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64;
-    let payload = Motor {
-        temperature1: generate_float(40f64, 45f64),
-        temperature2: generate_float(40f64, 45f64),
-        temperature3: generate_float(40f64, 45f64),
-        voltage: generate_float(95f64, 96f64),
-        current: generate_float(20f64, 25f64),
-        rpm: generate_int(1000, 9000),
-    };
-
-    return Payload {
-        timestamp,
-        sequence,
-        stream: "motor".to_string(),
-        payload: json!(payload),
-    };
-}
-
 // #[derive(Debug, Serialize)]
-// struct Peripheral {
-//     gps: String,
-//     gsm: String,
-//     imu: String,
-//     left_indicator: String,
-//     right_indicator: String,
-//     headlamp: String,
-//     horn: String,
-//     left_brake: String,
-//     right_brake: String,
+// struct Motor {
+//     temperature1: f64,
+//     temperature2: f64,
+//     temperature3: f64,
+//     voltage: f64,
+//     current: f64,
+//     rpm: i64,
 // }
 
-// pub fn generate_peripheral_state_data(sequence: u32) -> Payload {
+// pub fn generate_motor_data(sequence: u32) -> Payload {
 //     let timestamp = SystemTime::now()
 //         .duration_since(UNIX_EPOCH)
 //         .unwrap()
 //         .as_millis() as u64;
-//     let payload = Peripheral {
-//         gps: generate_bool_string(0.99),
-//         gsm: generate_bool_string(0.99),
-//         imu: generate_bool_string(0.99),
-//         left_indicator: generate_bool_string(0.1),
-//         right_indicator: generate_bool_string(0.1),
-//         headlamp: generate_bool_string(0.9),
-//         horn: generate_bool_string(0.05),
-//         left_brake: generate_bool_string(0.1),
-//         right_brake: generate_bool_string(0.1),
+//     let payload = Motor {
+//         temperature1: generate_float(40f64, 45f64),
+//         temperature2: generate_float(40f64, 45f64),
+//         temperature3: generate_float(40f64, 45f64),
+//         voltage: generate_float(95f64, 96f64),
+//         current: generate_float(20f64, 25f64),
+//         rpm: generate_int(1000, 9000),
 //     };
 
 //     return Payload {
 //         timestamp,
 //         sequence,
-//         stream: "peripherals".to_string(),
+//         stream: "motor".to_string(),
 //         payload: json!(payload),
 //     };
 // }
+
+#[derive(Debug, Serialize)]
+struct Peripheral {
+    gps: String,
+    gsm: String,
+    imu: String,
+    left_indicator: String,
+    right_indicator: String,
+    headlamp: String,
+    horn: String,
+    left_brake: String,
+    right_brake: String,
+}
+
+pub fn generate_peripheral_state_data(sequence: u32) -> Payload {
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64;
+    let payload = Peripheral {
+        gps: generate_bool_string(0.99),
+        gsm: generate_bool_string(0.99),
+        imu: generate_bool_string(0.99),
+        left_indicator: generate_bool_string(0.1),
+        right_indicator: generate_bool_string(0.1),
+        headlamp: generate_bool_string(0.9),
+        horn: generate_bool_string(0.05),
+        left_brake: generate_bool_string(0.1),
+        right_brake: generate_bool_string(0.1),
+    };
+
+    return Payload {
+        timestamp,
+        sequence,
+        stream: "peripherals".to_string(),
+        payload: json!(payload),
+    };
+}
 
 // #[derive(Debug, Serialize)]
 // struct DeviceShadow {
@@ -462,19 +462,19 @@ pub fn generate_initial_events(
         //     sequence: 1,
         // }));
 
-        // events.push(Event::DataEvent(DataEvent {
-        //     event_type: DataEventType::GeneratePeripheralData,
-        //     device: device.clone(),
-        //     timestamp,
-        //     sequence: 1,
-        // }));
-
         events.push(Event::DataEvent(DataEvent {
-            event_type: DataEventType::GenerateMotor,
+            event_type: DataEventType::GeneratePeripheralData,
             device: device.clone(),
             timestamp,
             sequence: 1,
         }));
+
+        // events.push(Event::DataEvent(DataEvent {
+        //     event_type: DataEventType::GenerateMotor,
+        //     device: device.clone(),
+        //     timestamp,
+        //     sequence: 1,
+        // }));
 
         events.push(Event::DataEvent(DataEvent {
             event_type: DataEventType::GenerateBMS,
@@ -497,8 +497,8 @@ pub fn next_event_duration(event_type: DataEventType) -> Duration {
         DataEventType::GenerateGPS => Duration::from_millis(1000),
         DataEventType::GenerateIMU => Duration::from_millis(100),
         // DataEventType::GenerateVehicleData => Duration::from_millis(1000),
-        // DataEventType::GeneratePeripheralData => Duration::from_millis(1000),
-        DataEventType::GenerateMotor => Duration::from_millis(250),
+        DataEventType::GeneratePeripheralData => Duration::from_millis(1000),
+        // DataEventType::GenerateMotor => Duration::from_millis(250),
         DataEventType::GenerateBMS => Duration::from_millis(250),
     }
 }
@@ -512,8 +512,8 @@ pub async fn process_data_event(
         DataEventType::GenerateGPS => generate_gps_data(&event.device, event.sequence),
         DataEventType::GenerateIMU => generate_imu_data(event.sequence),
         // DataEventType::GenerateVehicleData => generate_device_shadow_data(event.sequence),
-        // DataEventType::GeneratePeripheralData => generate_peripheral_state_data(event.sequence),
-        DataEventType::GenerateMotor => generate_motor_data(event.sequence),
+        DataEventType::GeneratePeripheralData => generate_peripheral_state_data(event.sequence),
+        // DataEventType::GenerateMotor => generate_motor_data(event.sequence),
         DataEventType::GenerateBMS => generate_bms_data(event.sequence),
     };
 
@@ -531,25 +531,25 @@ pub async fn process_data_event(
 
 pub async fn process_events(events: &mut BinaryHeap<Event>, partitions: &mut Partitions) {
     if let Some(e) = events.pop() {
-        let current_time = Instant::now();
-        let timestamp = event_timestamp(&e);
+        // let current_time = Instant::now();
+        // let timestamp = event_timestamp(&e);
 
-        if timestamp > current_time {
-            let time_left = timestamp.duration_since(current_time);
+        // if timestamp > current_time {
+        //     let time_left = timestamp.duration_since(current_time);
 
-            if time_left > Duration::from_millis(50) {
-                tokio::time::sleep(time_left).await;
-            }
-        }
+        //     if time_left > Duration::from_millis(50) {
+        //         tokio::time::sleep(time_left).await;
+        //     }
+        // }
 
         match e {
             Event::DataEvent(event) => {
                 process_data_event(&event, events, partitions).await;
             }
         }
-    } else {
-        tokio::time::sleep(Duration::from_millis(100)).await;
-    }
+    } // else {
+    //     tokio::time::sleep(Duration::from_millis(100)).await;
+    // }
 }
 
 #[tokio::main]

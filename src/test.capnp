@@ -30,18 +30,21 @@ struct ImuList {
   }
 }
 
-struct MotorList {
-  messages @0 :List(Motor);
+struct PeripheralsList {
+  messages @0 :List(Peripherals);
 
-  struct Motor {
+  struct Peripherals {
     timestamp @0 : UInt64;
     sequence @1 : UInt32;
-    temperature1 @2 : Float64;
-    temperature2 @3 : Float64;
-    temperature3 @4 : Float64;
-    voltage @5 : Float64;
-    current @6 : Float64;
-    rpm @7 : UInt32;
+    gps @2: Text;
+    gsm @3: Text;
+    imu @4: Text;
+    leftIndicator @5: Text;
+    rightIndicator @6: Text;
+    headlamp @7: Text;
+    horn @8: Text;
+    leftBrake @9: Text;
+    rightBrake @10: Text;
   }
 }
 

@@ -6,7 +6,7 @@ use serde_json::json;
 
 use crate::{
     base::Payload,
-    test_capnp::{bms_list, gps_list, imu_list, motor_list},
+    test_capnp::{bms_list, gps_list, imu_list, peripherals_list},
 };
 
 use super::Error;
@@ -47,19 +47,24 @@ pub fn serialize(payload: Vec<Payload>, stream: &str) -> Result<Vec<u8>, Error> 
 
             write_message(&mut buf, message.borrow_inner())?;
         }
-        "test.motorList" => {
-            let mut message = TypedBuilder::<motor_list::Owned>::new_default();
-            let mut motor_list = message.init_root().init_messages(payload.len() as u32);
+        "test.peripheralsList" => {
+            let mut message = TypedBuilder::<peripherals_list::Owned>::new_default();
+            let mut peripherals_list = message.init_root().init_messages(payload.len() as u32);
             for m in 0..payload.len() {
-                let mut motor = motor_list.reborrow().get(m as u32);
-                motor.set_sequence(payload[m].sequence);
-                motor.set_timestamp(payload[m].timestamp);
-                motor.set_temperature1(payload[m].payload["temperature1"].as_f64().unwrap());
-                motor.set_temperature2(payload[m].payload["temperature2"].as_f64().unwrap());
-                motor.set_temperature3(payload[m].payload["temperature3"].as_f64().unwrap());
-                motor.set_voltage(payload[m].payload["voltage"].as_f64().unwrap());
-                motor.set_current(payload[m].payload["current"].as_f64().unwrap());
-                motor.set_rpm(payload[m].payload["rpm"].as_u64().unwrap() as u32);
+                let mut peripherals = peripherals_list.reborrow().get(m as u32);
+                peripherals.set_sequence(payload[m].sequence);
+                peripherals.set_timestamp(payload[m].timestamp);
+                peripherals.set_gps(payload[m].payload["gps"].as_str().unwrap());
+                peripherals.set_gsm(payload[m].payload["gsm"].as_str().unwrap());
+                peripherals.set_imu(payload[m].payload["imu"].as_str().unwrap());
+                peripherals
+                    .set_right_indicator(payload[m].payload["right_indicator"].as_str().unwrap());
+                peripherals
+                    .set_left_indicator(payload[m].payload["left_indicator"].as_str().unwrap());
+                peripherals.set_horn(payload[m].payload["horn"].as_str().unwrap());
+                peripherals.set_headlamp(payload[m].payload["headlamp"].as_str().unwrap());
+                peripherals.set_right_brake(payload[m].payload["right_brake"].as_str().unwrap());
+                peripherals.set_left_brake(payload[m].payload["left_brake"].as_str().unwrap());
             }
 
             write_message(&mut buf, message.borrow_inner())?;
@@ -180,15 +185,17 @@ pub fn deserialize(payload: &[u8], stream: &str) -> Result<Vec<Payload>, Error> 
 
             Ok(payload)
         }
-        "test.motorList" => {
+        "test.peripheralsList" => {
             let message = read_message(payload, ReaderOptions::new())?;
-            let motor_list = message.get_root::<motor_list::Reader>()?.get_messages()?;
+            let peripherals_list = message
+                .get_root::<peripherals_list::Reader>()?
+                .get_messages()?;
             let mut payload = vec![];
-            for motor in motor_list {
+            for peripherals in peripherals_list {
                 payload.push(Payload {
-                    sequence: motor.get_sequence(),
-                    timestamp: motor.get_timestamp(),
-                    payload: json!({ "temperature1": motor.get_temperature1(), "temperature2":motor.get_temperature2(), "temperature3": motor.get_temperature3(), "voltage": motor.get_voltage(), "current": motor.get_current(), "rpm": motor.get_rpm() }),
+                    sequence: peripherals.get_sequence(),
+                    timestamp: peripherals.get_timestamp(),
+                    payload: json!({ "gps": peripherals.get_gps()?, "gsm":peripherals.get_gsm()?, "imu": peripherals.get_imu()?, "right_indicator": peripherals.get_right_indicator()?, "left_indicator": peripherals.get_left_indicator()?, "horn": peripherals.get_horn()?, "headlamp": peripherals.get_headlamp()?, "right_brake": peripherals.get_right_brake()?, "left_brake": peripherals.get_left_brake()? }),
                     ..Default::default()
                 });
             }
